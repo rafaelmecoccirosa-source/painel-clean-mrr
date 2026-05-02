@@ -148,15 +148,50 @@ export default function CompletarCadastroPage() {
   const [error,      setError]      = useState<string | null>(null);
   const [done,       setDone]       = useState(false);
 
-  // ── Load current user ──────────────────────────────────────────────────────
+  // ── Load current user — bail out if role is already known ─────────────────
 
   useEffect(() => {
-    createClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        setUser(data.user);
+    (async () => {
+      const supabase = createClient();
+      const { data: { user: u } } = await supabase.auth.getUser();
+      if (!u) {
         setLoading(false);
-      });
+        return;
+      }
+
+      // 1. Try to read role from profile. The RLS policy lets the user read
+      //    their own row, so this works without service role. If the profile
+      //    row already has a role, jump straight to the role-aware redirect.
+      let existingRole: string | null = null;
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", u.id)
+          .maybeSingle();
+        existingRole = profile?.role ?? null;
+      } catch {
+        /* read failed — fall through to JWT fallback below */
+      }
+
+      if (existingRole) {
+        window.location.href = "/api/auth/redirect";
+        return;
+      }
+
+      // 2. Fallback: user_metadata.role from the JWT. If present, we don't
+      //    need to ask anything — /api/auth/redirect will backfill the
+      //    profile row and route the user to the right dashboard.
+      const metaRole = (u.user_metadata?.role as string | undefined) ?? null;
+      if (metaRole) {
+        window.location.href = "/api/auth/redirect";
+        return;
+      }
+
+      // 3. No role anywhere — show the form.
+      setUser(u);
+      setLoading(false);
+    })();
   }, []);
 
   // ── Helpers ────────────────────────────────────────────────────────────────

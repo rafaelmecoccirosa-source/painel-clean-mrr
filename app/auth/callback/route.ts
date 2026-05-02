@@ -49,13 +49,37 @@ export async function GET(request: NextRequest) {
     .from("profiles")
     .select("role")
     .eq("user_id", data.user.id)
-    .single();
+    .maybeSingle();
 
-  if (!profile || !profile.role) {
-    // New user or profile without role — needs to complete registration
+  let role = profile?.role ?? null;
+
+  // Fallback: take role from user_metadata when the profile row hasn't been
+  // created yet (fresh signup) or is missing its role column. Backfill the
+  // profile so subsequent redirects don't loop.
+  if (!role) {
+    const metaRole = (data.user.user_metadata?.role as string | undefined) ?? null;
+    if (metaRole) {
+      const fullName =
+        (data.user.user_metadata?.full_name as string | undefined) ??
+        data.user.email?.split("@")[0] ??
+        null;
+      await serviceClient.from("profiles").upsert(
+        {
+          user_id:   data.user.id,
+          role:      metaRole,
+          full_name: fullName,
+        },
+        { onConflict: "user_id" },
+      );
+      role = metaRole;
+    }
+  }
+
+  if (!role) {
+    // Truly new user with no role anywhere — needs to complete registration
     return NextResponse.redirect(`${origin}/completar-cadastro`);
   }
 
-  const destination = ROLE_REDIRECT[profile.role] ?? "/cliente";
+  const destination = ROLE_REDIRECT[role] ?? "/cliente";
   return NextResponse.redirect(`${origin}${destination}`);
 }
