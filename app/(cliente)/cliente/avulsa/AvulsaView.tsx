@@ -24,7 +24,6 @@ export default function AvulsaView() {
   const [data, setData] = useState('');
   const [turno, setTurno] = useState<Turno>('manha');
   const [obs, setObs] = useState('');
-  const [endereco, setEndereco] = useState('');
   const [cidade, setCidade] = useState(DEFAULT_CITY);
   const [email, setEmail] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -145,8 +144,6 @@ export default function AvulsaView() {
           setTurno={setTurno}
           obs={obs}
           setObs={setObs}
-          endereco={endereco}
-          setEndereco={setEndereco}
           cidade={cidade}
           hasSubscription={hasSubscription}
           profileLoaded={profileLoaded}
@@ -160,7 +157,6 @@ export default function AvulsaView() {
           data={data}
           turno={turno}
           cidade={cidade}
-          endereco={endereco}
           obs={obs}
           hasSubscription={hasSubscription}
           onBack={() => setStep('detalhes')}
@@ -263,8 +259,6 @@ function StepDetalhes({
   setTurno,
   obs,
   setObs,
-  endereco,
-  setEndereco,
   cidade,
   hasSubscription,
   profileLoaded,
@@ -277,8 +271,6 @@ function StepDetalhes({
   setTurno: (t: Turno) => void;
   obs: string;
   setObs: (v: string) => void;
-  endereco: string;
-  setEndereco: (v: string) => void;
   cidade: string;
   hasSubscription: boolean;
   profileLoaded: boolean;
@@ -292,7 +284,6 @@ function StepDetalhes({
     profileLoaded &&
     modulos > 0 &&
     data !== '' &&
-    endereco.trim() !== '' &&
     cidade.trim() !== '' &&
     !sobConsulta;
 
@@ -301,13 +292,33 @@ function StepDetalhes({
       <div style={{ display: 'grid', gap: 20 }}>
         <div>
           <FieldLabel>Endereço de serviço</FieldLabel>
-          <Input
-            value={endereco}
-            onChange={setEndereco}
-            placeholder="Rua, número, bairro"
-          />
-          <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>
-            Cidade: <b style={{ color: COLORS.dark }}>{cidade}</b>
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 10,
+              background: COLORS.bg,
+              border: `1px solid ${COLORS.border}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div style={{ fontSize: 14, color: COLORS.dark, fontWeight: 600 }}>
+              {cidade}, SC
+            </div>
+            <Link
+              href="/cliente/perfil"
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: COLORS.green,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Alterar no perfil →
+            </Link>
           </div>
         </div>
 
@@ -483,7 +494,6 @@ function StepResumo({
   data,
   turno,
   cidade,
-  endereco,
   obs,
   hasSubscription,
   onBack,
@@ -493,7 +503,6 @@ function StepResumo({
   data: string;
   turno: Turno;
   cidade: string;
-  endereco: string;
   obs: string;
   hasSubscription: boolean;
   onBack: () => void;
@@ -512,42 +521,26 @@ function StepResumo({
     setError(null);
     setBusy(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('Sua sessão expirou. Faça login novamente.');
-        setBusy(false);
-        return;
-      }
-
-      const { data: inserted, error: insertError } = await supabase
-        .from('service_requests')
-        .insert({
-          client_id:      user.id,
-          status:         'pending',
-          origin:         'avulso',
-          city:           cidade,
-          address:        endereco,
-          module_count:   modulos,
+      const res = await fetch('/api/cliente/avulsa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           preferred_date: data,
           preferred_time: turno,
           notes:          obs || null,
           price_estimate: precoFinal,
-        })
-        .select('id')
-        .single();
-
-      if (insertError || !inserted) {
-        setError(insertError?.message ?? 'Não foi possível criar a solicitação. Tente novamente.');
+        }),
+      });
+      const payload = (await res.json()) as { protocolo?: string; error?: string };
+      if (!res.ok || !payload.protocolo) {
+        setError(payload.error ?? 'Não foi possível criar a solicitação. Tente novamente.');
         setBusy(false);
         return;
       }
-
-      const protocolo = inserted.id.slice(0, 8).toUpperCase();
       if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('avulsa:lastProtocolo', protocolo);
+        window.sessionStorage.setItem('avulsa:lastProtocolo', payload.protocolo);
       }
-      onConfirmed(protocolo);
+      onConfirmed(payload.protocolo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado.');
     } finally {
@@ -561,7 +554,7 @@ function StepResumo({
         <Eyebrow>Detalhes do serviço</Eyebrow>
         <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
           <Row label="Serviço" value="Limpeza profissional avulsa" />
-          <Row label="Endereço" value={`${endereco} — ${cidade}`} />
+          <Row label="Endereço" value={`${cidade}, SC`} />
           <Row label="Módulos" value={`${modulos} módulos`} />
           <Row label="Data solicitada" value={dataFmt} />
           <Row label="Turno" value={turnoLabel} />
