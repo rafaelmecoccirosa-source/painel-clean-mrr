@@ -49,18 +49,22 @@ function resolveHeroState(
   }
 
   if (lastReport) {
-    // 3. drop: efficiency < 85 OU alert_message presente
-    if (
-      (lastReport.efficiency_pct !== null && lastReport.efficiency_pct > 0 && lastReport.efficiency_pct < 85) ||
-      lastReport.alert_message !== null
-    ) return 'drop';
-
-    // 4. report: relatório do mês atual ainda não lido
-    if (
+    const isCurrentMonth =
       lastReport.period_month === today.getMonth() + 1 &&
-      lastReport.period_year === today.getFullYear() &&
-      lastReport.read_at === null
-    ) return 'report';
+      lastReport.period_year === today.getFullYear();
+
+    // 3. drop: só dispara para o relatório do MÊS ATUAL.
+    //    Relatórios antigos com alert_message ou efficiency baixa não devem
+    //    sobrescrever o estado "saudável" depois que o mês passa.
+    if (isCurrentMonth) {
+      if (
+        (lastReport.efficiency_pct !== null && lastReport.efficiency_pct > 0 && lastReport.efficiency_pct < 85) ||
+        lastReport.alert_message !== null
+      ) return 'drop';
+
+      // 4. report: relatório do mês atual ainda não lido
+      if (lastReport.read_at === null) return 'report';
+    }
   }
 
   return 'healthy';
