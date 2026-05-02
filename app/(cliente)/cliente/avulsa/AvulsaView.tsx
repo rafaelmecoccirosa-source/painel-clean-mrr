@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Eyebrow } from '@/components/landing-v2/shared';
 import { COLORS } from '@/lib/brand-tokens';
-import { MOCK_CLIENTE } from '@/lib/mock-cliente';
+import { createClient } from '@/lib/supabase/client';
+import { calcularLimpezaExtra, calcularPrecoAvulso } from '@/lib/pricing';
 
 type Step = 'detalhes' | 'resumo' | 'confirmacao';
+type Turno = 'manha' | 'tarde';
 
 const STEPS: { k: Step; label: string }[] = [
   { k: 'detalhes', label: 'Detalhes' },
@@ -14,16 +16,44 @@ const STEPS: { k: Step; label: string }[] = [
   { k: 'confirmacao', label: 'Confirmação' },
 ];
 
-const PRECO_AVULSO = 180;
-const DESCONTO_PCT = 0.4;
-const PRECO_ASSINANTE = Math.round(PRECO_AVULSO * (1 - DESCONTO_PCT));
-
 export default function AvulsaView() {
-  const c = MOCK_CLIENTE;
   const [step, setStep] = useState<Step>('detalhes');
-  const [modulos, setModulos] = useState<number>(c.modulos);
+  const [modulos, setModulos] = useState<number>(20);
   const [data, setData] = useState('');
+  const [turno, setTurno] = useState<Turno>('manha');
   const [obs, setObs] = useState('');
+  const [endereco, setEndereco] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [email, setEmail] = useState('');
+  const [hasSubscription, setHasSubscription] = useState(false);
+
+  // Pre-fill from profile and subscription
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setEmail(user.email ?? '');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('city')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.city) setCidade(profile.city);
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id, modules_count')
+        .eq('client_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (sub) {
+        setHasSubscription(true);
+        if (sub.modules_count) setModulos(sub.modules_count);
+      }
+    })();
+  }, []);
 
   const currentIdx = STEPS.findIndex((s) => s.k === step);
 
@@ -106,10 +136,15 @@ export default function AvulsaView() {
           setModulos={setModulos}
           data={data}
           setData={setData}
+          turno={turno}
+          setTurno={setTurno}
           obs={obs}
           setObs={setObs}
+          endereco={endereco}
+          setEndereco={setEndereco}
+          cidade={cidade}
+          hasSubscription={hasSubscription}
           onNext={() => setStep('resumo')}
-          endereco={`R. das Araucárias, 520 — ${c.cidade}`}
         />
       )}
 
@@ -117,13 +152,24 @@ export default function AvulsaView() {
         <StepResumo
           modulos={modulos}
           data={data}
-          cidade={c.cidade}
+          turno={turno}
+          cidade={cidade}
+          endereco={endereco}
+          obs={obs}
+          hasSubscription={hasSubscription}
           onBack={() => setStep('detalhes')}
-          onNext={() => setStep('confirmacao')}
+          onConfirmed={() => setStep('confirmacao')}
         />
       )}
 
-      {step === 'confirmacao' && <StepConfirmacao email={c.email} data={data} />}
+      {step === 'confirmacao' && (
+        <StepConfirmacao
+          email={email}
+          data={data}
+          modulos={modulos}
+          hasSubscription={hasSubscription}
+        />
+      )}
     </main>
   );
 }
@@ -194,49 +240,61 @@ function Input({
   );
 }
 
+function priceFor(modules: number, hasSubscription: boolean): number {
+  try {
+    return hasSubscription ? calcularLimpezaExtra(modules) : calcularPrecoAvulso(modules);
+  } catch {
+    return 0; // sob_consulta
+  }
+}
+
 function StepDetalhes({
   modulos,
   setModulos,
   data,
   setData,
+  turno,
+  setTurno,
   obs,
   setObs,
-  onNext,
   endereco,
+  setEndereco,
+  cidade,
+  hasSubscription,
+  onNext,
 }: {
   modulos: number;
   setModulos: (n: number) => void;
   data: string;
   setData: (v: string) => void;
+  turno: Turno;
+  setTurno: (t: Turno) => void;
   obs: string;
   setObs: (v: string) => void;
-  onNext: () => void;
   endereco: string;
+  setEndereco: (v: string) => void;
+  cidade: string;
+  hasSubscription: boolean;
+  onNext: () => void;
 }) {
   const today = new Date().toISOString().split('T')[0];
-  const valid = data !== '';
+  const precoAvulso = priceFor(modulos, false);
+  const precoFinal = priceFor(modulos, hasSubscription);
+  const sobConsulta = precoAvulso === 0;
+  const valid = data !== '' && endereco.trim() !== '' && cidade.trim() !== '' && !sobConsulta;
   return (
     <Card>
       <div style={{ display: 'grid', gap: 20 }}>
         <div>
           <FieldLabel>Endereço de serviço</FieldLabel>
-          <div
-            style={{
-              padding: '12px 14px',
-              borderRadius: 10,
-              background: COLORS.bg,
-              border: `1px solid ${COLORS.border}`,
-              fontSize: 14,
-              color: COLORS.dark,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>{endereco}</span>
-            <Button variant="ghost" size="sm">
-              Alterar
-            </Button>
+          <Input
+            value={endereco}
+            onChange={setEndereco}
+            placeholder="Rua, número, bairro"
+          />
+          <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>
+            Cidade: <b style={{ color: COLORS.dark }}>{cidade || '—'}</b>
+            {!cidade && ' (configure no seu perfil)'}
           </div>
         </div>
 
@@ -257,7 +315,7 @@ function StepDetalhes({
               cursor: 'pointer',
             }}
           >
-            {[10, 15, 20, 25, 30, 40, 50, 60].map((n) => (
+            {[10, 15, 20, 25, 30, 40, 50, 60, 80, 100].map((n) => (
               <option key={n} value={n}>
                 {n} módulos
               </option>
@@ -271,12 +329,44 @@ function StepDetalhes({
         </div>
 
         <div>
+          <FieldLabel>Turno</FieldLabel>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {([
+              { v: 'manha', label: 'Manhã (8h–12h)' },
+              { v: 'tarde', label: 'Tarde (13h–17h)' },
+            ] as const).map((opt) => {
+              const active = turno === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setTurno(opt.v)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    border: `1.5px solid ${active ? COLORS.green : COLORS.border}`,
+                    background: active ? COLORS.light : 'white',
+                    color: active ? COLORS.dark : COLORS.muted,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
           <FieldLabel>Observações (opcional)</FieldLabel>
           <textarea
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             rows={3}
-            placeholder="Horário preferido, pontos de atenção..."
+            placeholder="Pontos de atenção, acesso ao telhado..."
             style={{
               width: '100%',
               padding: '12px 14px',
@@ -299,40 +389,52 @@ function StepDetalhes({
             padding: 18,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 6,
-            }}
-          >
-            <span style={{ fontSize: 13, color: COLORS.muted }}>Preço tabela avulso:</span>
-            <span
-              style={{
-                fontSize: 15,
-                color: COLORS.muted,
-                textDecoration: 'line-through',
-                fontWeight: 600,
-              }}
-            >
-              R$ {PRECO_AVULSO},00
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 13, color: COLORS.dark, fontWeight: 700 }}>Preço assinante (40% off):</span>
-            <span
-              style={{
-                fontFamily: "'Montserrat',sans-serif",
-                fontWeight: 800,
-                fontSize: 24,
-                color: COLORS.green,
-                letterSpacing: '-.02em',
-              }}
-            >
-              R$ {PRECO_ASSINANTE},00
-            </span>
-          </div>
+          {sobConsulta ? (
+            <div style={{ fontSize: 13, color: COLORS.dark }}>
+              Acima de 100 módulos: <b>sob consulta</b>. Entre em contato com o admin.
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: 13, color: COLORS.muted }}>Preço tabela avulso:</span>
+                <span
+                  style={{
+                    fontSize: 15,
+                    color: COLORS.muted,
+                    textDecoration: hasSubscription ? 'line-through' : 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  R$ {precoAvulso.toFixed(2)}
+                </span>
+              </div>
+              {hasSubscription && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontSize: 13, color: COLORS.dark, fontWeight: 700 }}>
+                    Preço assinante (40% off):
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Montserrat',sans-serif",
+                      fontWeight: 800,
+                      fontSize: 24,
+                      color: COLORS.green,
+                      letterSpacing: '-.02em',
+                    }}
+                  >
+                    R$ {precoFinal.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
@@ -353,27 +455,92 @@ function StepDetalhes({
 function StepResumo({
   modulos,
   data,
+  turno,
   cidade,
+  endereco,
+  obs,
+  hasSubscription,
   onBack,
-  onNext,
+  onConfirmed,
 }: {
   modulos: number;
   data: string;
+  turno: Turno;
   cidade: string;
+  endereco: string;
+  obs: string;
+  hasSubscription: boolean;
   onBack: () => void;
-  onNext: () => void;
+  onConfirmed: (protocolo: string) => void;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const dataFmt = data ? new Date(data + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
-  const desconto = PRECO_AVULSO - PRECO_ASSINANTE;
+  const turnoLabel = turno === 'manha' ? 'Manhã (8h–12h)' : 'Tarde (13h–17h)';
+  const precoAvulso = priceFor(modulos, false);
+  const precoFinal = priceFor(modulos, hasSubscription);
+  const desconto = precoAvulso - precoFinal;
+
+  async function handleConfirm() {
+    setError(null);
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Sua sessão expirou. Faça login novamente.');
+        setBusy(false);
+        return;
+      }
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('service_requests')
+        .insert({
+          client_id:      user.id,
+          status:         'pending',
+          origin:         'avulso',
+          city:           cidade,
+          address:        endereco,
+          module_count:   modulos,
+          preferred_date: data,
+          preferred_time: turno,
+          notes:          obs || null,
+          price_estimate: precoFinal,
+        })
+        .select('id')
+        .single();
+
+      if (insertError || !inserted) {
+        setError(insertError?.message ?? 'Não foi possível criar a solicitação. Tente novamente.');
+        setBusy(false);
+        return;
+      }
+
+      // Stash protocol via URL hash so the confirmation step can pick it up
+      const protocolo = inserted.id.slice(0, 8).toUpperCase();
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('avulsa:lastProtocolo', protocolo);
+      }
+      onConfirmed(protocolo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro inesperado.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ display: 'grid', gap: 18 }}>
       <Card>
         <Eyebrow>Detalhes do serviço</Eyebrow>
         <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
           <Row label="Serviço" value="Limpeza profissional avulsa" />
-          <Row label="Endereço" value={`R. das Araucárias, 520 — ${cidade}`} />
-          <Row label="Módulos" value={`${modulos} módulos · 550W cada`} />
+          <Row label="Endereço" value={`${endereco} — ${cidade}`} />
+          <Row label="Módulos" value={`${modulos} módulos`} />
           <Row label="Data solicitada" value={dataFmt} />
+          <Row label="Turno" value={turnoLabel} />
+          {obs && <Row label="Observações" value={obs} />}
           <Row label="Técnico" value={`A confirmar (região: ${cidade})`} />
         </div>
       </Card>
@@ -381,11 +548,17 @@ function StepResumo({
       <Card>
         <Eyebrow>Cobrança</Eyebrow>
         <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-          <Row label="Preço tabela avulso" value={`R$ ${PRECO_AVULSO},00`} />
-          <Row
-            label="Desconto assinante 40%"
-            value={<span style={{ color: COLORS.green, fontWeight: 700 }}>− R$ {desconto},00</span>}
-          />
+          <Row label="Preço tabela avulso" value={`R$ ${precoAvulso.toFixed(2)}`} />
+          {hasSubscription && (
+            <Row
+              label="Desconto assinante 40%"
+              value={
+                <span style={{ color: COLORS.green, fontWeight: 700 }}>
+                  − R$ {desconto.toFixed(2)}
+                </span>
+              }
+            />
+          )}
           <div style={{ height: 1, background: COLORS.border, margin: '4px 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={{ fontSize: 14, color: COLORS.dark, fontWeight: 700 }}>Total</span>
@@ -398,30 +571,58 @@ function StepResumo({
                 letterSpacing: '-.02em',
               }}
             >
-              R$ {PRECO_ASSINANTE},00
+              R$ {precoFinal.toFixed(2)}
             </span>
-          </div>
-          <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 4 }}>
-            Cobrança separada da assinatura · Cartão Mastercard •••• 4782
           </div>
         </div>
       </Card>
 
+      {error && (
+        <div
+          style={{
+            background: '#FEF2F2',
+            border: '1px solid #FCA5A5',
+            color: '#991B1B',
+            padding: '12px 16px',
+            borderRadius: 10,
+            fontSize: 13,
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <Button variant="secondary" size="md" onClick={onBack}>
+        <Button variant="secondary" size="md" onClick={onBack} disabled={busy}>
           ← Voltar
         </Button>
-        <Button variant="primary" size="md" onClick={onNext}>
-          Confirmar pedido →
+        <Button variant="primary" size="md" onClick={handleConfirm} disabled={busy}>
+          {busy ? 'Enviando...' : 'Confirmar pedido →'}
         </Button>
       </div>
     </div>
   );
 }
 
-function StepConfirmacao({ email, data }: { email: string; data: string }) {
+function StepConfirmacao({
+  email,
+  data,
+  modulos,
+  hasSubscription,
+}: {
+  email: string;
+  data: string;
+  modulos: number;
+  hasSubscription: boolean;
+}) {
+  const [protocolo, setProtocolo] = useState<string>('');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setProtocolo(window.sessionStorage.getItem('avulsa:lastProtocolo') ?? '');
+    }
+  }, []);
   const dataFmt = data ? new Date(data + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
-  const protocolo = `AV-2026-${String(Math.floor(Math.random() * 9000) + 1000).padStart(4, '0')}`;
+  const valor = priceFor(modulos, hasSubscription);
   return (
     <Card>
       <div style={{ textAlign: 'center', padding: '24px 0' }}>
@@ -479,11 +680,11 @@ function StepConfirmacao({ email, data }: { email: string; data: string }) {
           gap: 10,
         }}
       >
-        <Row label="Protocolo" value={`#${protocolo}`} />
+        <Row label="Protocolo" value={`#${protocolo || '—'}`} />
         <Row label="Data solicitada" value={dataFmt} />
         <Row
           label="Valor a cobrar"
-          value={<span style={{ color: COLORS.green, fontWeight: 700 }}>R$ {PRECO_ASSINANTE},00</span>}
+          value={<span style={{ color: COLORS.green, fontWeight: 700 }}>R$ {valor.toFixed(2)}</span>}
         />
       </div>
 
