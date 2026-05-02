@@ -424,28 +424,32 @@ export default function ChamadoDetalheCliente({ id }: Props) {
   const [justificativa, setJustificativa] = useState("");
   const [report,        setReport]        = useState<ServiceReport | null>(null);
   const [review,        setReview]        = useState<Review | null>(null);
+  const [takenByOther,  setTakenByOther]  = useState(false);
 
   const fetchService = useCallback(async () => {
     try {
-      const supabase = createClient();
-      const [
-        { data: { user } },
-        { data },
-        { data: reportData, error: reportError },
-        { data: reviewData },
-      ] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from("service_requests").select("*").eq("id", id).single(),
-        supabase.from("service_reports").select("*").eq("service_request_id", id).maybeSingle(),
-        supabase.from("reviews").select("*").eq("service_request_id", id).maybeSingle(),
-      ]);
-      setUserId(user?.id ?? null);
-      setService(data as ServiceRequestDB | null);
-      // PGRST116 = table not found; ignore silently
-      if (!reportError || reportError.code === "PGRST116") {
-        setReport((reportData as ServiceReport | null) ?? null);
+      const res = await fetch(`/api/tecnico/chamado/${id}`, { cache: "no-store" });
+      if (res.status === 404) {
+        setService(null);
+        return;
       }
-      setReview((reviewData as Review | null) ?? null);
+      if (!res.ok) {
+        console.error("fetch chamado failed", res.status);
+        setService(null);
+        return;
+      }
+      const payload = (await res.json()) as {
+        service: ServiceRequestDB | null;
+        report:  ServiceReport | null;
+        review:  Review | null;
+        userId:  string;
+        takenByOther: boolean;
+      };
+      setUserId(payload.userId);
+      setService(payload.service);
+      setReport(payload.report);
+      setReview(payload.review);
+      setTakenByOther(payload.takenByOther);
     } catch (err) {
       console.error(err);
     } finally {
@@ -538,6 +542,18 @@ export default function ChamadoDetalheCliente({ id }: Props) {
     return (
       <div className="card text-center py-16">
         <p className="text-brand-muted">Chamado não encontrado.</p>
+      </div>
+    );
+  }
+
+  if (takenByOther && service.technician_id !== userId) {
+    return (
+      <div className="card text-center py-16 space-y-2">
+        <p className="text-2xl">🔒</p>
+        <p className="text-brand-dark font-semibold">Este chamado já foi aceito por outro técnico.</p>
+        <p className="text-brand-muted text-sm">
+          Volte para a lista para ver os chamados ainda disponíveis na sua região.
+        </p>
       </div>
     );
   }

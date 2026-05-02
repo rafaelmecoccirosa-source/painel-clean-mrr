@@ -53,7 +53,6 @@ export default function ChamadosPage() {
   const [done, setDone]         = useState<ServiceRequestDB[]>([]);
   const [loading, setLoading]   = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [missingCity, setMissingCity] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,27 +61,35 @@ export default function ChamadosPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Fetch tech city first so available chamados are filtered
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("city")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const techCity = profileData?.city?.trim() || null;
-      setMissingCity(!techCity);
+      // Resolve tech city: profile.city → user_metadata.city → no filter.
+      // The profile read can fail with 42P17 (recursive RLS) — swallow it
+      // and fall back to metadata so we still surface chamados.
+      let techCity: string | null = null;
+      try {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("city")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        techCity = profileData?.city?.trim() || null;
+      } catch {
+        /* RLS recursion or read error — try metadata */
+      }
+      if (!techCity) {
+        const metaCity = (user.user_metadata?.city as string | undefined)?.trim();
+        techCity = metaCity || null;
+      }
 
-      const availPromise = techCity
-        ? supabase
-            .from("service_requests")
-            .select("*")
-            .eq("status", "pending")
-            .is("technician_id", null)
-            .eq("city", techCity)
-            .order("preferred_date", { ascending: true })
-        : Promise.resolve({ data: [] as ServiceRequestDB[] });
+      let availQuery = supabase
+        .from("service_requests")
+        .select("*")
+        .eq("status", "pending")
+        .is("technician_id", null)
+        .order("preferred_date", { ascending: true });
+      if (techCity) availQuery = availQuery.eq("city", techCity);
 
       const [availRes, mineRes, doneRes] = await Promise.all([
-        availPromise,
+        availQuery,
         supabase
           .from("service_requests")
           .select("*")
@@ -251,19 +258,6 @@ export default function ChamadosPage() {
 
       {loading ? (
         <Skeleton />
-      ) : tab === "available" && missingCity ? (
-        <div className="card text-center py-12 space-y-3">
-          <p className="text-2xl">📍</p>
-          <p className="text-brand-muted text-sm max-w-md mx-auto">
-            Complete seu perfil com a cidade de atuação para ver chamados disponíveis.
-          </p>
-          <Link
-            href="/tecnico/perfil"
-            className="inline-block bg-brand-dark text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-brand-dark-hover transition-colors"
-          >
-            Completar perfil →
-          </Link>
-        </div>
       ) : shown[tab].length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-2xl mb-3">
