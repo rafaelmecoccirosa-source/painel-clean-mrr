@@ -2,147 +2,185 @@
 
 > Arquivo vivo. Atualizar a cada sessão.
 > Versão: v2 — modelo assinatura (Netflix)
-> Última atualização: 2026-04-21
+> Última atualização: 2026-04-30
 
 ---
 
-## PENDENTES (a fazer)
+## PENDENTES — Bugs críticos a resolver
 
-### Dashboard cliente — ajustes visuais
-- [ ] Header — corrigir para seguir pixel-perfect o Header.jsx do handoff (fundo #EBF3E8, nav pills, avatar com plano)
-- [ ] Menu — atualizar para ordem correta: Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
-- [ ] Páginas internas — alinhar tipografia, eyebrows, cards com tokens do handoff
-- [ ] Partículas e animações fade-up nas seções dark das páginas internas
-- [ ] "Meu Plano" mover para dentro de Perfil (remover do menu)
+- [ ] RLS policy `admin_read_all_profiles` causa 42P17 (recursão infinita) em várias leituras client-side
+  - Fix: aplicar `auth.jwt() -> 'user_metadata' ->> 'role'` na policy em vez de subquery em profiles
+  - Isso destrava chamados do técnico, perfil, e outras leituras que usam createClient()
+- [ ] "Completar cadastro" aparecendo indevidamente para usuários que já têm perfil completo
+- [ ] Perfil cliente — modal de edição não salva corretamente em alguns casos
+- [ ] Hero state da Fernanda mostrando "drop" em vez de "healthy" — monthly_report com alert_message ativo sobrepondo lógica
+- [ ] Responsivo mobile — dashboard cliente quebra no celular (admin e técnico ok)
 
-### Login e cadastro — reimplementar
-- [ ] Login — refinamento visual com tokens da landing v2 (protótipo aprovado em 2026-04-21)
-- [ ] Cadastro — novo fluxo em steps:
-  - Cliente: Dados pessoais → Dados da usina (+ adicionar mais usinas) → Escolha do plano → Confirmação
-  - Técnico: Dados pessoais → Experiência/disponibilidade → Aguardando aprovação (admin aprova)
-- [ ] Protótipo aprovado — pode implementar no Claude Code
+---
 
-### Dashboards técnico e admin
-- [ ] Dashboard técnico — briefing pro Claude Design (agenda assinatura vs avulso, chamados, ganhos)
-- [ ] Dashboard admin — briefing pro Claude Design (assinaturas MRR/churn, relatórios, mapa)
-- [ ] Implementar dashboards no Claude Code após protótipos aprovados
+## PENDENTES — Fluxo e funcionalidades
 
-### Landing /v2 — fechar
+### Fluxo end-to-end (parcialmente testado)
+- [ ] Técnico aceitar chamado → testar se status muda corretamente no banco
+- [ ] Admin liberar repasse → testar fluxo completo de pagamento
+- [ ] Notificações em tempo real quando chamado é aceito
+
+### Dashboard cliente
+- [ ] Responsivo mobile — todas as páginas
+- [ ] Hero state corrigido com lógica de prioridade correta
+- [ ] Indicações — conectar com tabela referrals real (link de indicação funcional)
+- [ ] Relatórios — PDF real gerado (MVP: admin gera manualmente)
+
+### Dashboard técnico
+- [ ] Briefing Claude Design — layout, componentes, animações
+- [ ] Agenda — conectada ao banco mas layout básico, precisa de design
+- [ ] Conclusão de serviço — upload de fotos real (hoje aceita URL)
+- [ ] Perfil técnico — status de aprovação visível
+
+### Dashboard admin
+- [ ] Briefing Claude Design — layout, componentes, animações
+- [ ] Aprovação de técnicos — checklist antes de aprovar
+- [ ] Relatório mensal — interface para admin preencher manualmente (MVP)
+- [ ] Mapa — corrigir erro supabaseUrl (SUPABASE_SERVICE_ROLE_KEY vazio no build)
+
+### Login e cadastro
+- [ ] Visual do login — alinhar com tokens da landing v2
+- [ ] Cadastro — testar fluxo completo com usuário real novo (cliente e técnico)
+- [ ] completar-cadastro — revisar condição que dispara indevidamente
+
+### Landing
 - [ ] Promover /v2 → / após aprovação final (arquivar atual em /v1)
 
-### Banco de dados
-- [ ] Testar fluxo end-to-end com dados reais (cliente → técnico → admin → repasse)
-- [ ] Criar tabela `referrals` se ainda não existir
+---
 
-### Pré-lançamento
-- [ ] Auditoria de acessibilidade
-- [ ] Testar responsivo mobile em todas as páginas
+## PENDENTES — Pré-lançamento
+
+- [ ] Corrigir RLS policy admin_read_all_profiles (raiz de vários bugs)
+- [ ] Adicionar SUPABASE_SERVICE_ROLE_KEY no .env.local local (build warnings)
 - [ ] Configurar domínio customizado no Vercel
-- [ ] Adicionar SUPABASE_SERVICE_ROLE_KEY no .env.local (2 erros de build em rotas admin)
+- [ ] Auditoria de acessibilidade
+- [ ] Responsivo mobile — todas as páginas
 
-### Pós-MVP
+---
+
+## PENDENTES — Pós-MVP
+
 - [ ] Integração API inversores (Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye)
 - [ ] Débito automático recorrente
 - [ ] App mobile (base responsiva sendo construída com isso em mente)
-- [ ] Certificação de técnicos (checklist admin + aprovação)
 - [ ] Geração automática de PDF de relatório com fotos antes/depois
+- [ ] Renomear repos: painel-clean-plataforma → v1, painel-clean-v2 → v2/v3
+
+---
+
+## CONCLUÍDO — Sessão 2026-04-30
+
+### Fluxo end-to-end — primeiros testes reais
+- [x] Avulsa cria service_request real no banco (origin='avulso', protocolo real)
+- [x] Técnico vê chamados disponíveis na home
+- [x] Detalhe do chamado funcionando (criado GET /api/tecnico/chamado/[id])
+- [x] Aba Chamados disponíveis corrigida (fallback quando RLS falha)
+- [x] Fix "takenByOther" — card adequado quando chamado já foi aceito
+
+### Segurança e infraestrutura
+- [x] Next.js atualizado 14.2.18 → 14.2.35 (security patch CVE)
+- [x] CRON_SECRET adicionado no Vercel
+- [x] Cron job de auto-scheduling criado (app/api/cron/schedule-services)
+- [x] vercel.json configurado com cron diário às 8h
+
+### Banco de dados
+- [x] Migration read_at em monthly_reports aplicada
+- [x] Tabela referrals criada com RLS policies
+- [x] Tabela notifications criada com RLS
+- [x] Migration approved_at em profiles aplicada
+- [x] efficiency_pct corrigido em todos os monthly_reports demo
+- [x] Cenários de hero configurados por cliente demo:
+  - Fernanda Alves → healthy (próxima limpeza 45 dias)
+  - Ana Silva → soon (limpeza em 2 dias)
+  - Ricardo Mendes → post_cleaning (limpeza há 3 dias)
+  - Maria Oliveira → drop (efficiency 69.9% + alert_message)
+
+### Autenticação e redirect
+- [x] Fix redirect por role — layouts de cliente/técnico/admin corrigidos
+- [x] user_metadata.role atualizado para todos os usuários demo
+- [x] /api/auth/redirect cria profile se não existir
+
+### Terminologia e identidade
+- [x] Tagline corrigida para "Limpeza e Cuidado para Usinas Solares"
+- [x] "Sem fidelidade" removido → "1ª limpeza com 50% off"
+- [x] "placas" → "módulos" em 7 arquivos de UI
+- [x] panel_count removido → module_count em 4 arquivos
+- [x] lib/pricing.ts — nova faixa até 15 módulos R$35/módulo
+
+### Dashboards implementados
+- [x] Dashboard cliente — 8 telas com dados reais do Supabase
+- [x] Dashboard técnico — home, chamados, agenda, ganhos, perfil, conclusão
+- [x] Dashboard admin — home, serviços, pagamentos, relatórios, mapa, aprovação técnicos
+- [x] Notificações — tabela + RLS + badge no header + marcar como lidas
+
+### CLAUDE.md
+- [x] Schema completo documentado (service_reports, notifications, approved_at)
+- [x] Cenários demo documentados
+- [x] Divergências corrigidas (technician_id, preferred_date, status values)
 
 ---
 
 ## CONCLUÍDO — Sessão 2026-04-21
 
-### Dashboard cliente v2 — implementado via Claude Code
-- [x] Layout base com header + proteção de role
-- [x] Home — HeroCard (5 estados dinâmicos) + 3 StatCards + histórico resumido + CTA avulsa
-- [x] ReagendarModal — calendário 14 dias + seleção de turno + confirmação
-- [x] Meu Plano — hero dark, cobrança, contrato, comparativo planos, limpeza extra, cancelamento
-- [x] Relatórios — 3 métricas + gráfico de barras Chart.js + lista PDFs + card informativo
-- [x] Histórico — gráfico linha eficiência + barras antes/depois + tabela completa
-- [x] Indicações — hero 12% + progress 5 níveis + link copia-cola + tabela indicados + como funciona
-- [x] Perfil — dados pessoais + minha usina + assinatura + pagamento + toggles notificações
-- [x] Avulsa — 3-step wizard (Detalhes → Resumo → Confirmação) com cálculo 40% off
-- [x] lib/mock-cliente.ts criado com MOCK_CLIENTE, MOCK_HISTORICO, MOCK_RELATORIOS, MOCK_INDICACOES
-- [x] Chart.js 4.5.1 + react-chartjs-2 5.3.1 instalados
-- [x] Fix redirect pós-login — /api/auth/redirect usando createClient() (não service)
-
-### Documentação
-- [x] CLAUDE.md atualizado com identidade de marca, tagline, tom de voz, banco completo, fluxos
-- [x] TODO.md atualizado
-
-### Protótipos aprovados (prontos para implementar)
-- [x] Login/cadastro — protótipo interativo aprovado em 2026-04-21
-  - Login: fundo dark green + partículas + Google OAuth + email/senha
-  - Cadastro cliente: 4 steps (dados → usina → plano → confirmação)
-  - Cadastro técnico: 3 steps (dados → experiência → aguardando aprovação)
+- [x] Dashboard cliente v2 — 8 telas implementadas via Claude Code
+- [x] Chart.js instalado e configurado
+- [x] Fix redirect pós-login
+- [x] CLAUDE.md e TODO.md atualizados
 
 ---
 
 ## CONCLUÍDO — Sessão 2026-04-20
 
-### Landing /v2 — implementação via Claude Code terminal
-- [x] Claude Code terminal instalado no WSL (Ubuntu 24) via npm install -g @anthropic-ai/claude-code
-- [x] Landing v3 implementada: 14 seções, 15+ componentes em components/landing-v2/
-- [x] Partículas corrigidas: canvas-based, opacidade 0.4–0.7, velocidade 10–18s
-- [x] Calculadora: premissa 130 kWh/kWp/mês, toggle padrão "Nunca" (30% perda)
-- [x] Dobra "Se paga em ~4 dias" adicionada com ícones por plano
-- [x] sc-municipios.ts criado com 295 municípios de SC
-
-### Banco de dados v2
-- [x] Migrations aplicadas: subscriptions, monthly_reports, service_requests_v2
-- [x] Seed: 4 clientes com assinatura ativa + monthly_reports + service_requests
+- [x] Landing /v2 implementada — 14 seções, partículas canvas-based
+- [x] Calculadora corrigida (130 kWh/kWp/mês)
+- [x] Migrations v2 aplicadas no Supabase
 
 ---
 
-## CONCLUÍDO — Sessão 2026-04-18
+## CONCLUÍDO — Sessões anteriores
 
-### Landing atual (/) — refinamentos
-- [x] Hero mobile: background-position 30% center
-- [x] FAQ accordion com transição suave
-- [x] Contador animado na prova social
-- [x] Seção "Onde atuamos" com cidades ativas + em breve
-
----
-
-## CONCLUÍDO — Sessão 2026-04-17
-
-### Setup v2
-- [x] Repo painel-clean-v2 criado no GitHub
-- [x] Supabase painel-clean-v2 configurado
-- [x] 6 técnicos + 6 clientes + 1 admin demo criados
-- [x] Deploy Vercel painel-clean-v2.vercel.app
+- [x] Repo painel-clean-v2 criado e configurado
+- [x] Supabase v2 com RLS configurado
+- [x] Deploy Vercel funcionando
 - [x] Google OAuth configurado
-- [x] lib/pricing.ts — faixas v2
-- [x] lib/config.ts — SUBSCRIPTION_ENABLED = true
+- [x] 6 técnicos + 6 clientes + 1 admin demo criados
+- [x] Landing atual (/) refinada mobile
 
 ---
 
-## DECISÕES TOMADAS — v2
+## DECISÕES TOMADAS
 
 - **Modelo:** assinatura mensal (Netflix) com avulso como secundário
-- **Planos:** Básico R$30/≤15mod, Padrão R$50/16-30mod, Plus R$100/31-60mod, Pro/Business sob consulta
-- **Limpezas:** 2/ano incluídas em todos os planos
-- **Entrada:** 1ª limpeza 50% off + contrato mínimo 12 meses
+- **Planos:** Básico R$30/≤15mod · Padrão R$50/16-30mod · Plus R$100/31-60mod · Pro/Business sob consulta
+- **Limpezas:** 2/ano incluídas · 1ª limpeza 50% off · contrato 12 meses
 - **Cancelamento:** paga saldo devedor do período restante
-- **Limpeza extra:** 40% mais barata que avulso para assinantes
-- **Calculadora:** 130 kWh/kWp/mês, tarifa R$0,92/kWh, toggle padrão "Nunca"
-- **Sem % de comissão** na landing — só no dashboard técnico pós-login
-- **Sem "sem fidelidade"** — existe contrato de 12 meses
-- **Planos por módulos** — sem "Mais Popular"
-- **Programa de indicações:** +6% por indicação, máximo 30% (5 indicações), válido 12 meses
-- **Menu dashboard cliente:** Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
-- **"Meu Plano"** fica dentro de Perfil — não é item de menu separado
-- **Avulsa/Reagendar:** avulsa = página própria 3 steps | reagendar = modal na home
-- **Claude Code terminal** (VS Code WSL) é o ambiente principal
-- **Dashboard cliente:** hero dinâmico com 5 estados (healthy/post_cleaning/soon/drop/report)
-- **Referência visual:** handoff do Claude Design é fonte de verdade — não protótipos do Claude.ai
-- **Tagline oficial:** "Limpeza e Cuidado para Usinas Solares"
-- **Nomenclatura:** "módulos" (não placas), "usina" (não sistema), "limpeza" (não serviço)
+- **Limpeza extra:** 40% off avulso para assinantes
+- **Preços avulso:** até 15mod=R$35 · 16-30=R$30 · 31-50=R$25 · 51-100=R$20
+- **Indicações:** +6% por indicação · máximo 30% (5 indicações) · válido 12 meses
+- **Comissão:** 25% plataforma / 75% técnico — nunca mostrar na landing ou dashboard cliente
+- **Avulsa:** página própria 3 steps | Reagendar: modal na home
+- **Hero cliente:** 5 estados (healthy/post_cleaning/soon/drop/report)
+- **Menu cliente:** Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
+- **Meu Plano:** dentro de Perfil — não é item de menu separado
+- **Referência visual:** handoff Claude Design é fonte de verdade
+- **Tagline:** "Limpeza e Cuidado para Usinas Solares"
+- **Nomenclatura:** "módulos" / "usina" / "limpeza"
+- **Técnico aceita direto** — admin pode intervir quando necessário
+- **Auto-scheduling:** cron diário cria service_requests quando next_service_at ≤ hoje+7dias
+- **Repos pós-MVP:** painel-clean-plataforma=v1(uber) · painel-clean-v2=v2/v3(netflix atual)
 
 ---
 
-## PRÓXIMAS SESSÕES
+## PRÓXIMAS SESSÕES (ordem sugerida)
 
-1. Corrigir header + estilo visual páginas internas dashboard cliente (prompt pronto)
-2. Implementar login/cadastro novo (protótipo aprovado)
-3. Briefing Claude Design: dashboard técnico + admin
-4. Testar fluxo end-to-end com dados reais
+1. **Fix RLS** — corrigir admin_read_all_profiles policy (raiz de vários bugs)
+2. **Bugs** — completar-cadastro indevido + hero state Fernanda + perfil não salva
+3. **Responsivo** — dashboard cliente mobile-first
+4. **Claude Design** — briefar técnico e admin, depois implementar
+5. **Fluxo end-to-end** — teste completo cliente→técnico→admin→repasse
+6. **Landing** — promover /v2 → /
