@@ -56,14 +56,14 @@ export default function IndicacoesView({
   const descontoReal = Math.round((mensalidadeOriginal * descontoIndicacao) / 100);
 
   return (
-    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
+    <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       {/* Hero dark */}
       <section
         className="fade-up"
         style={{ position: 'relative', background: `linear-gradient(135deg, ${COLORS.dark} 0%, #0E251C 100%)`, color: 'white', borderRadius: 24, padding: '36px 40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(27,58,45,.22)' }}
       >
         <Particles count={18} />
-        <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'center' }}>
+        <div className="pc-mobile-stack" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'center' }}>
           <div>
             <Eyebrow color="#6EE7A0">Seu desconto atual</Eyebrow>
             <div style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 900, fontSize: 96, color: 'white', letterSpacing: '-.04em', lineHeight: 1, marginTop: 8, textShadow: '0 2px 24px rgba(61,196,90,.35)' }}>
@@ -92,7 +92,7 @@ export default function IndicacoesView({
       </section>
 
       {/* 5 níveis */}
-      <section className="fade-up fade-up-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+      <section className="fade-up fade-up-1 pc-mobile-stack-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
         {NIVEIS.map(n => {
           const ativo = n.n <= indicacoesAtivas;
           return (
@@ -145,6 +145,7 @@ export default function IndicacoesView({
             indicacoes.map((row, i) => (
               <div
                 key={row.id}
+                className="pc-mobile-grid-col"
                 style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto auto', gap: 18, alignItems: 'center', padding: '16px 22px', borderBottom: i < indicacoes.length - 1 ? `1px solid ${COLORS.border}` : 'none' }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 9999, background: `linear-gradient(135deg, ${COLORS.green}, ${COLORS.dark})`, color: 'white', fontFamily: "'Montserrat',sans-serif", fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '.02em' }}>
@@ -174,7 +175,7 @@ export default function IndicacoesView({
         <h3 style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 700, fontSize: 18, color: COLORS.dark, margin: '4px 0 20px' }}>
           4 passos simples
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+        <div className="pc-mobile-stack-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
           {STEPS.map(s => (
             <div key={s.n}>
               <div style={{ width: 36, height: 36, borderRadius: 9999, background: COLORS.green, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>

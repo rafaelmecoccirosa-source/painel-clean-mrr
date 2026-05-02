@@ -35,7 +35,7 @@ export default function PlanoPage() {
   const mesesUsados = 1;
 
   return (
-    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
+    <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       {/* Hero dark — plano ativo */}
       <section
         className="fade-up"
@@ -247,7 +247,7 @@ export default function PlanoPage() {
         >
           Fazer upgrade ou mudar de plano
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+        <div className="pc-mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
           {PLANS.map((p) => {
             const isAtual = p.id === 'standard';
             return (

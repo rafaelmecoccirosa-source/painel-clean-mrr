@@ -126,3 +126,81 @@
     transform: none !important;
   }
 }
+
+/* ── Cliente dashboard — mobile responsive overrides ────────────────────────
+   Pages in /cliente/* use inline styles for layout. Inline styles beat
+   Tailwind utility classes by CSS specificity, so we route mobile
+   overrides through these helper classes (with !important so they win
+   over the inline grid templates and paddings on small screens).
+──────────────────────────────────────────────────────────────────────────── */
+.pc-mobile-only { display: none; }
+
+@media (max-width: 640px) {
+  .pc-mobile-stack {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .pc-mobile-stack-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .pc-mobile-flex-col {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .pc-mobile-grid-col {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .pc-mobile-pad {
+    padding: 24px 16px 56px !important;
+  }
+  .pc-mobile-pad-card {
+    padding: 18px !important;
+  }
+  .pc-mobile-h-scroll {
+    grid-auto-flow: column !important;
+    grid-auto-columns: 86% !important;
+    grid-template-columns: none !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+  }
+  .pc-mobile-h-scroll > * {
+    scroll-snap-align: start !important;
+  }
+  .pc-mobile-hidden { display: none !important; }
+  .pc-mobile-only   { display: flex !important; }
+  .pc-mobile-h-auto {
+    height: auto !important;
+    padding: 12px 16px !important;
+  }
+  .pc-mobile-text-shrink { font-size: 22px !important; }
+  .pc-mobile-h-pad-tight  { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
+/* Hamburger drawer for the cliente header. */
+.pc-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 37, 28, 0.55);
+  z-index: 60;
+}
+.pc-drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(78vw, 320px);
+  background: #ffffff;
+  z-index: 61;
+  box-shadow: -8px 0 32px rgba(27, 58, 45, 0.18);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 24px;
+  gap: 4px;
+  overflow-y: auto;
+}

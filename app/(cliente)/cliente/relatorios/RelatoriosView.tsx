@@ -22,7 +22,7 @@ type Props = {
 
 export default function RelatoriosView({ rows, eficienciaMedia, totalGerado }: Props) {
   return (
-    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
+    <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       <div>
         <Eyebrow>Relatórios</Eyebrow>
         <h1 style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 28, color: COLORS.dark, margin: '6px 0 0', letterSpacing: '-.025em' }}>
@@ -30,7 +30,7 @@ export default function RelatoriosView({ rows, eficienciaMedia, totalGerado }: P
         </h1>
       </div>
 
-      <section className="fade-up fade-up-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+      <section className="fade-up fade-up-1 pc-mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         <MetricCard
           eyebrow="Eficiência média"
           value={eficienciaMedia ? `${eficienciaMedia}%` : '—'}
@@ -74,6 +74,7 @@ export default function RelatoriosView({ rows, eficienciaMedia, totalGerado }: P
             rows.map((r, i) => (
               <div
                 key={r.id}
+                className="pc-mobile-grid-col"
                 style={{ display: 'grid', gridTemplateColumns: '44px 1fr auto auto', gap: 16, alignItems: 'center', padding: '16px 22px', borderBottom: i < rows.length - 1 ? `1px solid ${COLORS.border}` : 'none' }}
               >
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: COLORS.light, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>

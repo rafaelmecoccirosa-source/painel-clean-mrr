@@ -51,6 +51,7 @@ export default function ClienteHomeView(props: ClienteHomeProps) {
   return (
     <>
       <main
+        className="pc-mobile-pad"
         style={{
           maxWidth: 1200,
           margin: '0 auto',
@@ -101,7 +102,7 @@ export default function ClienteHomeView(props: ClienteHomeProps) {
         </div>
 
         <section
-          className="fade-up fade-up-1"
+          className="fade-up fade-up-1 pc-mobile-stack"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}
         >
           <NextCleaningCard
@@ -212,6 +213,7 @@ function HistoryRow({ row, last }: { row: HistoricoRow; last: boolean }) {
   const hasGanho = row.ganho && row.ganho !== '—';
   return (
     <div
+      className="pc-mobile-grid-col"
       style={{
         display: 'grid',
         gridTemplateColumns: `44px 1fr${hasGanho ? ' auto' : ''} auto auto`,

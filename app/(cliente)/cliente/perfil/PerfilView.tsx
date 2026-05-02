@@ -99,7 +99,7 @@ export default function PerfilView({
   const cidadeDisplay = cidade && cidade.trim() && cidade !== '—' ? cidade : 'Jaraguá do Sul';
 
   return (
-    <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
+    <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       {isDemo && (
         <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 12, padding: '12px 18px', fontSize: 13, color: '#92400E', fontWeight: 600 }}>
           Dados demo — assine um plano para ver seus dados reais
@@ -123,7 +123,7 @@ export default function PerfilView({
       </div>
 
       <section
-        className="fade-up fade-up-1"
+        className="fade-up fade-up-1 pc-mobile-stack"
         style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24 }}
       >
         {/* Dados pessoais */}

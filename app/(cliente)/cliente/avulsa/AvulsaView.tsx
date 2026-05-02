@@ -63,7 +63,7 @@ export default function AvulsaView() {
   const currentIdx = STEPS.findIndex((s) => s.k === step);
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 28 }}>
+    <main className="pc-mobile-pad" style={{ maxWidth: 900, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 28 }}>
       <div>
         <Eyebrow>Solicitar serviço avulso</Eyebrow>
         <h1

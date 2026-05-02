@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 import { COLORS } from '@/components/landing-v2/shared';
 import { createClient } from '@/lib/supabase/client';
 import { initialsOf } from '@/lib/mock-cliente';
@@ -53,6 +53,7 @@ export default function Header({
 }) {
   const [notifOpen, setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifs, setNotifs]         = useState<Notification[]>([]);
   const pathname  = usePathname();
   const router    = useRouter();
@@ -108,7 +109,7 @@ export default function Header({
         boxShadow: '0 1px 2px rgba(27,58,45,.04)',
       }}
     >
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="pc-mobile-h-pad-tight" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/cliente/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/landing-v2-logo-mark.jpg" alt="Painel Clean" style={{ width: 38, height: 38, borderRadius: 9, objectFit: 'cover' }} />
@@ -116,17 +117,33 @@ export default function Header({
             <div style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 19, letterSpacing: '-.02em', color: COLORS.dark }}>
               Painel <span style={{ color: COLORS.green }}>Clean</span>
             </div>
-            <div style={{ fontSize: 12, marginTop: 4, color: COLORS.muted, fontWeight: 500, fontFamily: "'Open Sans',sans-serif", letterSpacing: '.02em' }}>
+            <div className="pc-mobile-hidden" style={{ fontSize: 12, marginTop: 4, color: COLORS.muted, fontWeight: 500, fontFamily: "'Open Sans',sans-serif", letterSpacing: '.02em' }}>
               Limpeza e monitoramento solar
             </div>
           </div>
         </Link>
 
-        <nav style={{ display: 'flex', gap: 2 }}>
+        <nav className="pc-mobile-hidden" style={{ display: 'flex', gap: 2 }}>
           {NAV_ITEMS.map((item) => <NavPill key={item.href} item={item} active={isActive(pathname, item.href)} />)}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          {/* Hamburger — mobile only */}
+          <button
+            type="button"
+            aria-label="Abrir menu"
+            onClick={() => setDrawerOpen(true)}
+            className="pc-mobile-only"
+            style={{
+              display: 'none',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: COLORS.dark, padding: 9, borderRadius: 10,
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Menu size={22} />
+          </button>
+
           {/* Bell */}
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button
@@ -208,7 +225,7 @@ export default function Header({
               <div style={{ width: 34, height: 34, borderRadius: 9999, background: COLORS.dark, color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(27,58,45,.15)', fontFamily: "'Montserrat',sans-serif", letterSpacing: '.02em' }}>
                 {initials}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
+              <div className="pc-mobile-hidden" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 13, color: COLORS.dark, fontWeight: 600 }}>{userName}</span>
                 <span style={{ fontSize: 12, color: COLORS.muted, fontFamily: "'Open Sans',sans-serif", marginTop: 2 }}>Plano {plano}</span>
               </div>
@@ -228,6 +245,62 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      {drawerOpen && (
+        <>
+          <div className="pc-drawer-overlay" onClick={() => setDrawerOpen(false)} />
+          <aside className="pc-drawer-panel" role="dialog" aria-label="Menu">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 16, color: COLORS.dark }}>
+                Menu
+              </span>
+              <button
+                type="button"
+                aria-label="Fechar menu"
+                onClick={() => setDrawerOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: COLORS.dark, cursor: 'pointer', padding: 6, borderRadius: 8 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    textDecoration: 'none',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: isActive(pathname, item.href) ? COLORS.dark : COLORS.muted,
+                    background: isActive(pathname, item.href) ? COLORS.light : 'transparent',
+                    fontFamily: "'Open Sans',sans-serif",
+                  }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <div style={{ height: 1, background: COLORS.border, margin: '12px 0' }} />
+              <button
+                type="button"
+                onClick={() => { setDrawerOpen(false); handleLogout(); }}
+                style={{
+                  padding: '12px 14px', borderRadius: 10, textAlign: 'left',
+                  border: 'none', background: 'transparent', cursor: 'pointer',
+                  fontSize: 15, fontWeight: 600, color: '#B91C1C',
+                  fontFamily: "'Open Sans',sans-serif",
+                }}
+              >
+                Sair
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
     </header>
   );
 }
