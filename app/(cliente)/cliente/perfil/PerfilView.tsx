@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Eyebrow } from '@/components/landing-v2/shared';
 import { COLORS } from '@/lib/brand-tokens';
 import { initialsOf } from '@/lib/mock-cliente';
-import { createClient } from '@/lib/supabase/client';
 
 type NotifKey = 'lembrete' | 'relatorio' | 'alerta' | 'promocoes';
 
@@ -48,45 +47,63 @@ export default function PerfilView({
     alerta: true,
     promocoes: false,
   });
+
+  // Local overrides used for optimistic update — values displayed in the UI
+  // come from these states first, falling back to the props from the server.
+  const [localNome,   setLocalNome]   = useState<string | null>(null);
+  const [localPhone,  setLocalPhone]  = useState<string | null>(null);
+  const [localCidade, setLocalCidade] = useState<string | null>(null);
+
+  const displayNome   = localNome   ?? nome;
+  const displayPhone  = localPhone  ?? phone;
+  const displayCidade = localCidade ?? cidade;
+
   const [editing, setEditing] = useState(false);
-  const [editNome, setEditNome] = useState(nome);
-  const [editPhone, setEditPhone] = useState(phone || '');
-  const [editCidade, setEditCidade] = useState(cidade && cidade !== '—' ? cidade : 'Jaraguá do Sul');
+  const [editNome, setEditNome] = useState(displayNome);
+  const [editPhone, setEditPhone] = useState(displayPhone || '');
+  const [editCidade, setEditCidade] = useState(displayCidade && displayCidade !== '—' ? displayCidade : 'Jaraguá do Sul');
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   function openEdit() {
-    setEditNome(nome);
-    setEditPhone(phone || '');
-    setEditCidade(cidade && cidade !== '—' ? cidade : 'Jaraguá do Sul');
+    setEditNome(displayNome);
+    setEditPhone(displayPhone || '');
+    setEditCidade(displayCidade && displayCidade !== '—' ? displayCidade : 'Jaraguá do Sul');
     setEditError(null);
     setEditing(true);
   }
 
   async function handleSave() {
+    const trimmedNome   = editNome.trim();
+    const trimmedPhone  = editPhone.trim();
+    const trimmedCidade = editCidade.trim();
+    if (!trimmedNome)   { setEditError('Informe seu nome completo.'); return; }
+    if (!trimmedCidade) { setEditError('Informe sua cidade.'); return; }
+
     setSaving(true);
     setEditError(null);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setEditError('Sua sessão expirou. Faça login novamente.');
+      const res = await fetch('/api/cliente/perfil', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: trimmedNome,
+          phone:     trimmedPhone || null,
+          city:      trimmedCidade,
+        }),
+      });
+      const payload = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !payload.ok) {
+        setEditError(payload.error ?? 'Não foi possível salvar. Tente novamente.');
         setSaving(false);
         return;
       }
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: editNome.trim() || null,
-          phone:     editPhone.trim() || null,
-          city:      editCidade.trim() || null,
-        })
-        .eq('user_id', user.id);
-      if (error) {
-        setEditError(error.message);
-        setSaving(false);
-        return;
-      }
+
+      // Optimistic update — refletir os novos valores antes de o
+      // server component rebuscar do banco
+      setLocalNome(trimmedNome);
+      setLocalPhone(trimmedPhone);
+      setLocalCidade(trimmedCidade);
       setEditing(false);
       router.refresh();
     } catch (err) {
@@ -96,7 +113,7 @@ export default function PerfilView({
     }
   }
 
-  const cidadeDisplay = cidade && cidade.trim() && cidade !== '—' ? cidade : 'Jaraguá do Sul';
+  const cidadeDisplay = displayCidade && displayCidade.trim() && displayCidade !== '—' ? displayCidade : 'Jaraguá do Sul';
 
   return (
     <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
@@ -153,7 +170,7 @@ export default function PerfilView({
                 letterSpacing: '.02em',
               }}
             >
-              {initialsOf(nome)}
+              {initialsOf(displayNome)}
             </div>
             <div>
               <div
@@ -165,7 +182,7 @@ export default function PerfilView({
                   letterSpacing: '-.02em',
                 }}
               >
-                {nome}
+                {displayNome}
               </div>
               <div style={{ marginTop: 6 }}>
                 <Badge tone="green">Assinante {plano}</Badge>
@@ -175,7 +192,7 @@ export default function PerfilView({
 
           <div style={{ display: 'grid', gap: 12 }}>
             <FieldRow label="Email" value={email} />
-            <FieldRow label="Telefone" value={phone || '—'} />
+            <FieldRow label="Telefone" value={displayPhone || '—'} />
             <FieldRow label="CPF" value="•••.•••.123-45" />
             <FieldRow
               label="Cidade"
