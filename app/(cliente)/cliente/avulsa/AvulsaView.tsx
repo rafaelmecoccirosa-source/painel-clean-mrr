@@ -16,23 +16,26 @@ const STEPS: { k: Step; label: string }[] = [
   { k: 'confirmacao', label: 'Confirmação' },
 ];
 
+const DEFAULT_CITY = 'Jaraguá do Sul';
+
 export default function AvulsaView() {
   const [step, setStep] = useState<Step>('detalhes');
-  const [modulos, setModulos] = useState<number>(20);
+  const [modulos, setModulos] = useState<number>(0);
   const [data, setData] = useState('');
   const [turno, setTurno] = useState<Turno>('manha');
   const [obs, setObs] = useState('');
   const [endereco, setEndereco] = useState('');
-  const [cidade, setCidade] = useState('');
+  const [cidade, setCidade] = useState(DEFAULT_CITY);
   const [email, setEmail] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Pre-fill from profile and subscription
   useEffect(() => {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setProfileLoaded(true); return; }
       setEmail(user.email ?? '');
 
       const { data: profile } = await supabase
@@ -40,7 +43,9 @@ export default function AvulsaView() {
         .select('city')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (profile?.city) setCidade(profile.city);
+      if (profile?.city && profile.city.trim() !== '') {
+        setCidade(profile.city);
+      }
 
       const { data: sub } = await supabase
         .from('subscriptions')
@@ -52,6 +57,7 @@ export default function AvulsaView() {
         setHasSubscription(true);
         if (sub.modules_count) setModulos(sub.modules_count);
       }
+      setProfileLoaded(true);
     })();
   }, []);
 
@@ -133,7 +139,6 @@ export default function AvulsaView() {
       {step === 'detalhes' && (
         <StepDetalhes
           modulos={modulos}
-          setModulos={setModulos}
           data={data}
           setData={setData}
           turno={turno}
@@ -144,6 +149,7 @@ export default function AvulsaView() {
           setEndereco={setEndereco}
           cidade={cidade}
           hasSubscription={hasSubscription}
+          profileLoaded={profileLoaded}
           onNext={() => setStep('resumo')}
         />
       )}
@@ -241,6 +247,7 @@ function Input({
 }
 
 function priceFor(modules: number, hasSubscription: boolean): number {
+  if (modules <= 0) return 0;
   try {
     return hasSubscription ? calcularLimpezaExtra(modules) : calcularPrecoAvulso(modules);
   } catch {
@@ -250,7 +257,6 @@ function priceFor(modules: number, hasSubscription: boolean): number {
 
 function StepDetalhes({
   modulos,
-  setModulos,
   data,
   setData,
   turno,
@@ -261,10 +267,10 @@ function StepDetalhes({
   setEndereco,
   cidade,
   hasSubscription,
+  profileLoaded,
   onNext,
 }: {
   modulos: number;
-  setModulos: (n: number) => void;
   data: string;
   setData: (v: string) => void;
   turno: Turno;
@@ -275,13 +281,21 @@ function StepDetalhes({
   setEndereco: (v: string) => void;
   cidade: string;
   hasSubscription: boolean;
+  profileLoaded: boolean;
   onNext: () => void;
 }) {
   const today = new Date().toISOString().split('T')[0];
   const precoAvulso = priceFor(modulos, false);
   const precoFinal = priceFor(modulos, hasSubscription);
-  const sobConsulta = precoAvulso === 0;
-  const valid = data !== '' && endereco.trim() !== '' && cidade.trim() !== '' && !sobConsulta;
+  const sobConsulta = modulos > 100;
+  const valid =
+    profileLoaded &&
+    modulos > 0 &&
+    data !== '' &&
+    endereco.trim() !== '' &&
+    cidade.trim() !== '' &&
+    !sobConsulta;
+
   return (
     <Card>
       <div style={{ display: 'grid', gap: 20 }}>
@@ -293,34 +307,44 @@ function StepDetalhes({
             placeholder="Rua, número, bairro"
           />
           <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 6 }}>
-            Cidade: <b style={{ color: COLORS.dark }}>{cidade || '—'}</b>
-            {!cidade && ' (configure no seu perfil)'}
+            Cidade: <b style={{ color: COLORS.dark }}>{cidade}</b>
           </div>
         </div>
 
-        <div>
-          <FieldLabel>Quantidade de módulos</FieldLabel>
-          <select
-            value={modulos}
-            onChange={(e) => setModulos(Number(e.target.value))}
-            style={{
-              width: '100%',
-              padding: '12px 14px',
-              borderRadius: 10,
-              border: `1.5px solid ${COLORS.border}`,
-              fontSize: 14,
-              color: COLORS.dark,
-              background: 'white',
-              fontFamily: "'Open Sans',sans-serif",
-              cursor: 'pointer',
-            }}
-          >
-            {[10, 15, 20, 25, 30, 40, 50, 60, 80, 100].map((n) => (
-              <option key={n} value={n}>
-                {n} módulos
-              </option>
-            ))}
-          </select>
+        <div
+          style={{
+            background: COLORS.bg,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 12,
+            padding: '14px 18px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div>
+            <FieldLabel>Sua usina</FieldLabel>
+            <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.dark }}>
+              {modulos > 0 ? `${modulos} módulos` : profileLoaded ? '— sem assinatura ativa' : 'Carregando...'}
+            </div>
+          </div>
+          {hasSubscription && (
+            <span
+              style={{
+                background: COLORS.light,
+                color: COLORS.dark,
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '6px 12px',
+                borderRadius: 9999,
+                textTransform: 'uppercase',
+                letterSpacing: '.08em',
+              }}
+            >
+              Assinante
+            </span>
+          )}
         </div>
 
         <div>
@@ -381,61 +405,63 @@ function StepDetalhes({
           />
         </div>
 
-        <div
-          style={{
-            background: COLORS.light,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 12,
-            padding: 18,
-          }}
-        >
-          {sobConsulta ? (
-            <div style={{ fontSize: 13, color: COLORS.dark }}>
-              Acima de 100 módulos: <b>sob consulta</b>. Entre em contato com o admin.
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ fontSize: 13, color: COLORS.muted }}>Preço tabela avulso:</span>
-                <span
+        {modulos > 0 && (
+          <div
+            style={{
+              background: COLORS.light,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 12,
+              padding: 18,
+            }}
+          >
+            {sobConsulta ? (
+              <div style={{ fontSize: 13, color: COLORS.dark }}>
+                Acima de 100 módulos: <b>sob consulta</b>. Entre em contato com o admin.
+              </div>
+            ) : (
+              <>
+                <div
                   style={{
-                    fontSize: 15,
-                    color: COLORS.muted,
-                    textDecoration: hasSubscription ? 'line-through' : 'none',
-                    fontWeight: 600,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 6,
                   }}
                 >
-                  R$ {precoAvulso.toFixed(2)}
-                </span>
-              </div>
-              {hasSubscription && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 13, color: COLORS.dark, fontWeight: 700 }}>
-                    Preço assinante (40% off):
-                  </span>
+                  <span style={{ fontSize: 13, color: COLORS.muted }}>Preço tabela avulso:</span>
                   <span
                     style={{
-                      fontFamily: "'Montserrat',sans-serif",
-                      fontWeight: 800,
-                      fontSize: 24,
-                      color: COLORS.green,
-                      letterSpacing: '-.02em',
+                      fontSize: 15,
+                      color: COLORS.muted,
+                      textDecoration: hasSubscription ? 'line-through' : 'none',
+                      fontWeight: 600,
                     }}
                   >
-                    R$ {precoFinal.toFixed(2)}
+                    R$ {precoAvulso.toFixed(2)}
                   </span>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+                {hasSubscription && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 13, color: COLORS.dark, fontWeight: 700 }}>
+                      Preço assinante (40% off):
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'Montserrat',sans-serif",
+                        fontWeight: 800,
+                        fontSize: 24,
+                        color: COLORS.green,
+                        letterSpacing: '-.02em',
+                      }}
+                    >
+                      R$ {precoFinal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Link href="/cliente/home" style={{ textDecoration: 'none' }}>
@@ -517,7 +543,6 @@ function StepResumo({
         return;
       }
 
-      // Stash protocol via URL hash so the confirmation step can pick it up
       const protocolo = inserted.id.slice(0, 8).toUpperCase();
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem('avulsa:lastProtocolo', protocolo);

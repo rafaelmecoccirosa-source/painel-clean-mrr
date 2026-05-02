@@ -77,8 +77,8 @@ export default async function PerfilPage() {
   const props: PerfilProps = {
     nome,
     email: user.email ?? '—',
-    cidade: profile?.city ?? '—',
-    phone: profile?.phone ?? '—',
+    cidade: profile?.city?.trim() ? profile.city : 'Jaraguá do Sul',
+    phone: profile?.phone ?? '',
     plano: planLabel,
     mensalidade: sub.price_monthly,
     modulosCount: sub.modules_count,

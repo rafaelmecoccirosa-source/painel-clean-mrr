@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Eyebrow } from '@/components/landing-v2/shared';
 import { COLORS } from '@/lib/brand-tokens';
 import { initialsOf } from '@/lib/mock-cliente';
+import { createClient } from '@/lib/supabase/client';
 
 type NotifKey = 'lembrete' | 'relatorio' | 'alerta' | 'promocoes';
 
@@ -39,12 +41,62 @@ export default function PerfilView({
   descontoIndicacao,
   isDemo,
 }: PerfilProps) {
+  const router = useRouter();
   const [notif, setNotif] = useState<Record<NotifKey, boolean>>({
     lembrete: true,
     relatorio: true,
     alerta: true,
     promocoes: false,
   });
+  const [editing, setEditing] = useState(false);
+  const [editNome, setEditNome] = useState(nome);
+  const [editPhone, setEditPhone] = useState(phone || '');
+  const [editCidade, setEditCidade] = useState(cidade && cidade !== '—' ? cidade : 'Jaraguá do Sul');
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function openEdit() {
+    setEditNome(nome);
+    setEditPhone(phone || '');
+    setEditCidade(cidade && cidade !== '—' ? cidade : 'Jaraguá do Sul');
+    setEditError(null);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setEditError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setEditError('Sua sessão expirou. Faça login novamente.');
+        setSaving(false);
+        return;
+      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editNome.trim() || null,
+          phone:     editPhone.trim() || null,
+          city:      editCidade.trim() || null,
+        })
+        .eq('user_id', user.id);
+      if (error) {
+        setEditError(error.message);
+        setSaving(false);
+        return;
+      }
+      setEditing(false);
+      router.refresh();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Erro inesperado.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const cidadeDisplay = cidade && cidade.trim() && cidade !== '—' ? cidade : 'Jaraguá do Sul';
 
   return (
     <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
@@ -126,14 +178,13 @@ export default function PerfilView({
             <FieldRow label="Telefone" value={phone || '—'} />
             <FieldRow label="CPF" value="•••.•••.123-45" />
             <FieldRow
-              label="Endereço"
-              value={cidade ? `${cidade}, SC` : '—'}
-              action={<Button variant="ghost" size="sm">Editar</Button>}
+              label="Cidade"
+              value={`${cidadeDisplay}, SC`}
             />
           </div>
 
           <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${COLORS.border}` }}>
-            <Button variant="secondary" size="md">
+            <Button variant="secondary" size="md" onClick={openEdit}>
               Editar dados pessoais
             </Button>
           </div>
@@ -289,7 +340,170 @@ export default function PerfilView({
           ))}
         </div>
       </section>
+
+      {editing && (
+        <EditModal
+          nome={editNome}
+          setNome={setEditNome}
+          phone={editPhone}
+          setPhone={setEditPhone}
+          cidade={editCidade}
+          setCidade={setEditCidade}
+          saving={saving}
+          error={editError}
+          onCancel={() => setEditing(false)}
+          onSave={handleSave}
+        />
+      )}
     </main>
+  );
+}
+
+function EditModal({
+  nome,
+  setNome,
+  phone,
+  setPhone,
+  cidade,
+  setCidade,
+  saving,
+  error,
+  onCancel,
+  onSave,
+}: {
+  nome: string;
+  setNome: (v: string) => void;
+  phone: string;
+  setPhone: (v: string) => void;
+  cidade: string;
+  setCidade: (v: string) => void;
+  saving: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(14, 37, 28, 0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        zIndex: 50,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: 16,
+          padding: 28,
+          width: '100%',
+          maxWidth: 480,
+          boxShadow: '0 16px 48px rgba(0,0,0,.25)',
+          display: 'grid',
+          gap: 18,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'Montserrat',sans-serif",
+            fontWeight: 800,
+            fontSize: 22,
+            color: COLORS.dark,
+            margin: 0,
+          }}
+        >
+          Editar dados pessoais
+        </h2>
+
+        <ModalField label="Nome completo">
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            style={modalInputStyle}
+          />
+        </ModalField>
+
+        <ModalField label="Telefone">
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="(47) 99999-0000"
+            style={modalInputStyle}
+          />
+        </ModalField>
+
+        <ModalField label="Cidade">
+          <input
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+            placeholder="Jaraguá do Sul"
+            style={modalInputStyle}
+          />
+        </ModalField>
+
+        {error && (
+          <div
+            style={{
+              background: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              color: '#991B1B',
+              padding: '10px 14px',
+              borderRadius: 10,
+              fontSize: 13,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+          <Button variant="secondary" size="md" onClick={onCancel} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button variant="primary" size="md" onClick={onSave} disabled={saving}>
+            {saving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const modalInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px 14px',
+  borderRadius: 10,
+  border: `1.5px solid ${COLORS.border}`,
+  fontSize: 14,
+  color: COLORS.dark,
+  fontFamily: "'Open Sans',sans-serif",
+  outline: 'none',
+};
+
+function ModalField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'grid', gap: 6 }}>
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: COLORS.muted,
+          textTransform: 'uppercase',
+          letterSpacing: '.08em',
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
