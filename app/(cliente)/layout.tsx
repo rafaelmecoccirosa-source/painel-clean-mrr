@@ -25,18 +25,24 @@ export default async function ClienteLayout({ children }: { children: React.Reac
       .from('profiles')
       .select('full_name, role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profile) {
       userRole = profile.role ?? null;
       userName = profile.full_name ?? userName;
     }
   } catch {
-    /* ignore — role guard handled below */
+    /* ignore — fallback handled below */
+  }
+
+  if (!userRole) {
+    const metaRole = (user.user_metadata?.role as string | undefined) ?? null;
+    userRole = metaRole;
   }
 
   if (userRole === 'tecnico') redirect('/tecnico');
   if (userRole === 'admin') redirect('/admin');
+  if (!userRole) redirect('/completar-cadastro');
 
   return (
     <div style={{ background: COLORS.bg, minHeight: '100vh' }}>

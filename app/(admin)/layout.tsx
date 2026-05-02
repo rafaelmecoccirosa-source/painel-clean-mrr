@@ -20,7 +20,7 @@ export default async function AdminLayout({
 
   if (!user) redirect("/login");
 
-  // 2. Fetch profile via service role (bypasses RLS — server-side only)
+  // 2. Fetch profile via service role (bypasses RLS — admin needs full read)
   let userName = user.email?.split("@")[0] ?? "Administrador";
   let userRole: string | null = null;
 
@@ -30,17 +30,23 @@ export default async function AdminLayout({
       .from("profiles")
       .select("full_name, role")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile) {
       userRole = profile.role ?? null;
       userName = profile.full_name ?? userName;
     }
-  } catch { /* service client unavailable — proceed without role guard */ }
+  } catch { /* service client unavailable — proceed to JWT fallback */ }
+
+  if (!userRole) {
+    const metaRole = (user.user_metadata?.role as string | undefined) ?? null;
+    userRole = metaRole;
+  }
 
   // 3. Role guard OUTSIDE try/catch so redirect() exception is not swallowed
-  if (userRole === "cliente") redirect("/cliente");
+  if (userRole === "cliente") redirect("/cliente/home");
   if (userRole === "tecnico") redirect("/tecnico");
+  if (!userRole)              redirect("/login");
 
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col">
