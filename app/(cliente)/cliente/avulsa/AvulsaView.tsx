@@ -67,6 +67,7 @@ export default function AvulsaView() {
       <div>
         <Eyebrow>Solicitar serviço avulso</Eyebrow>
         <h1
+          className="pc-mobile-page-title"
           style={{
             fontFamily: "'Montserrat',sans-serif",
             fontWeight: 800,
@@ -117,7 +118,7 @@ export default function AvulsaView() {
                 >
                   {done ? '✓' : i + 1}
                 </span>
-                {s.label}
+                <span className="pc-mobile-hidden">{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
                 <div
@@ -179,6 +180,7 @@ export default function AvulsaView() {
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
+      className="pc-mobile-card"
       style={{
         background: 'white',
         border: `1px solid ${COLORS.border}`,

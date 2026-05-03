@@ -15,7 +15,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function ImpactoChart() {
   return (
-    <div style={{ height: 260 }}>
+    <div className="pc-mobile-chart-200" style={{ height: 260 }}>
       <Bar
         data={{
           labels: ['mar/25', 'jun/25', 'set/25', 'mar/26'],

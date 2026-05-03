@@ -19,7 +19,7 @@ export default function GeracaoMensalChart() {
   const bgColors = DATA.map((v) => (v >= 420 ? COLORS.green : 'rgba(61,196,90,0.35)'));
 
   return (
-    <div style={{ height: 280 }}>
+    <div className="pc-mobile-chart-200" style={{ height: 280 }}>
       <Bar
         data={{
           labels: LABELS,

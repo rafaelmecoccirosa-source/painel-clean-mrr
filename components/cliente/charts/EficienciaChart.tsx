@@ -16,7 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, 
 
 export default function EficienciaChart() {
   return (
-    <div style={{ height: 260 }}>
+    <div className="pc-mobile-chart-200" style={{ height: 260 }}>
       <Line
         data={{
           labels: ['Mar/25', 'Jun/25', 'Set/25', 'Dez/25', 'Mar/26'],

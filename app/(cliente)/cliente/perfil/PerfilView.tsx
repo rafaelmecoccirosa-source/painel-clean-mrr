@@ -126,6 +126,7 @@ export default function PerfilView({
       <div>
         <Eyebrow>Seu perfil</Eyebrow>
         <h1
+          className="pc-mobile-page-title"
           style={{
             fontFamily: "'Montserrat',sans-serif",
             fontWeight: 800,

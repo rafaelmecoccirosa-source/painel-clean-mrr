@@ -59,14 +59,14 @@ export default function IndicacoesView({
     <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       {/* Hero dark */}
       <section
-        className="fade-up"
+        className="fade-up pc-hero-section"
         style={{ position: 'relative', background: `linear-gradient(135deg, ${COLORS.dark} 0%, #0E251C 100%)`, color: 'white', borderRadius: 24, padding: '36px 40px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(27,58,45,.22)' }}
       >
         <Particles count={18} />
         <div className="pc-mobile-stack" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'center' }}>
           <div>
             <Eyebrow color="#6EE7A0">Seu desconto atual</Eyebrow>
-            <div style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 900, fontSize: 96, color: 'white', letterSpacing: '-.04em', lineHeight: 1, marginTop: 8, textShadow: '0 2px 24px rgba(61,196,90,.35)' }}>
+            <div className="pc-mobile-jumbo" style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 900, fontSize: 96, color: 'white', letterSpacing: '-.04em', lineHeight: 1, marginTop: 8, textShadow: '0 2px 24px rgba(61,196,90,.35)' }}>
               {descontoIndicacao}%
             </div>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', marginTop: 10 }}>

@@ -231,9 +231,13 @@
   .pc-mobile-card {
     padding: 16px !important;
   }
-  .pc-mobile-chart-200 > * {
+  .pc-mobile-chart-200 {
     height: 200px !important;
   }
+
+  /* Big monetary/numeric displays inside dark heroes (plano value,
+     indicações desconto) shrink on mobile so they don't overflow. */
+  .pc-mobile-jumbo { font-size: 56px !important; }
 
   /* Header bits — drop the avatar's vertical separator and shrink the
      notifications dropdown so it fits a 390px viewport. */

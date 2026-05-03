@@ -38,7 +38,7 @@ export default function PlanoPage() {
     <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       {/* Hero dark — plano ativo */}
       <section
-        className="fade-up"
+        className="fade-up pc-hero-section"
         style={{
           background: `linear-gradient(135deg, ${COLORS.dark} 0%, #0E251C 100%)`,
           color: 'white',
@@ -51,6 +51,7 @@ export default function PlanoPage() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 10 }}>
           <span style={{ fontSize: 20, color: 'rgba(255,255,255,.7)', fontWeight: 600 }}>R$</span>
           <span
+            className="pc-mobile-jumbo"
             style={{
               fontFamily: "'Montserrat',sans-serif",
               fontWeight: 900,

@@ -59,7 +59,7 @@ export default async function HistoricoPage() {
     <main className="pc-mobile-pad" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px 72px', display: 'grid', gap: 24 }}>
       <div>
         <Eyebrow>Histórico completo</Eyebrow>
-        <h1 style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 28, color: COLORS.dark, margin: '6px 0 0', letterSpacing: '-.025em' }}>
+        <h1 className="pc-mobile-page-title" style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 28, color: COLORS.dark, margin: '6px 0 0', letterSpacing: '-.025em' }}>
           Todos os serviços da sua usina
         </h1>
       </div>
