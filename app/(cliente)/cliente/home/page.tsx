@@ -77,6 +77,8 @@ export default async function ClienteHomePage() {
 
   const uid = user.id;
 
+  const todayIso = new Date().toISOString().split('T')[0];
+
   // 4 queries em paralelo
   const [subRes, nextSvcRes, reportsRes, completedRes] = await Promise.all([
     supabase
@@ -86,11 +88,15 @@ export default async function ClienteHomePage() {
       .eq('status', 'active')
       .limit(1)
       .maybeSingle(),
+    // Próxima limpeza: APENAS serviços de assinatura, em aberto e a partir de hoje.
+    // Avulsos nunca devem aparecer no card "Próxima limpeza".
     supabase
       .from('service_requests')
       .select('*')
       .eq('client_id', uid)
-      .in('status', ['pending', 'accepted'])
+      .eq('origin', 'subscription')
+      .in('status', ['pending', 'accepted', 'confirmed'])
+      .gte('preferred_date', todayIso)
       .order('preferred_date', { ascending: true })
       .limit(1)
       .maybeSingle(),
