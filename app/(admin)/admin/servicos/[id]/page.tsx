@@ -2,6 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+
+function whatsAppHref(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
+  return `https://wa.me/${withCountry}`;
+}
 
 export const metadata: Metadata = { title: "Detalhe do Serviço — Admin | Painel Clean" };
 
@@ -49,46 +58,57 @@ export default async function AdminServicoDetailPage({
 
   let service: any = null;
   let clientProfile: any = null;
+  let clientEmail: string | null = null;
   let techProfile: any = null;
+  let techEmail: string | null = null;
   let report: any = null;
 
   try {
-    const supabase = await createClient();
+    // Auth check via session client; data fetches via service role to bypass
+    // RLS recursion and to access auth.users.email.
+    await createClient();
+    const admin = createServiceClient();
 
-    // Fetch service
-    const { data: svc } = await supabase
+    const { data: svc } = await admin
       .from("service_requests")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     service = svc;
 
     if (service) {
-      // Fetch client profile
-      const { data: cp } = await supabase
+      const { data: cp } = await admin
         .from("profiles")
-        .select("full_name, email, phone, city")
+        .select("full_name, phone, city")
         .eq("user_id", service.client_id)
-        .single();
+        .maybeSingle();
       clientProfile = cp;
 
-      // Fetch technician profile if assigned
+      try {
+        const { data: u } = await admin.auth.admin.getUserById(service.client_id);
+        clientEmail = u?.user?.email ?? null;
+      } catch { /* ignore */ }
+
       if (service.technician_id) {
-        const { data: tp } = await supabase
+        const { data: tp } = await admin
           .from("profiles")
-          .select("full_name, email, phone, city")
+          .select("full_name, phone, city")
           .eq("user_id", service.technician_id)
-          .single();
+          .maybeSingle();
         techProfile = tp;
+
+        try {
+          const { data: u } = await admin.auth.admin.getUserById(service.technician_id);
+          techEmail = u?.user?.email ?? null;
+        } catch { /* ignore */ }
       }
 
-      // Fetch report if exists
-      const { data: rp } = await supabase
+      const { data: rp } = await admin
         .from("service_reports")
         .select("*")
         .eq("service_request_id", id)
-        .single();
+        .maybeSingle();
       report = rp;
     }
   } catch (err) {
@@ -209,51 +229,95 @@ export default async function AdminServicoDetailPage({
           </div>
 
           {/* Client */}
-          <div className="card space-y-2">
+          <div className="card space-y-3">
             <h2 className="font-heading font-bold text-brand-dark text-base">👤 Cliente</h2>
             {clientProfile ? (
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <p className="text-brand-muted text-xs">Nome</p>
-                  <p className="text-brand-dark font-medium">{clientProfile.full_name ?? "—"}</p>
+              <>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-brand-muted text-xs">Nome</p>
+                    <p className="text-brand-dark font-medium">{clientProfile.full_name ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-brand-muted text-xs">Email</p>
+                    <p className="text-brand-dark font-medium break-all">{clientEmail ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-brand-muted text-xs">Telefone</p>
+                    <p className="text-brand-dark font-medium">{clientProfile.phone ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-brand-muted text-xs">Cidade</p>
+                    <p className="text-brand-dark font-medium">{clientProfile.city ?? "—"}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-brand-muted text-xs">Email</p>
-                  <p className="text-brand-dark font-medium">{clientProfile.email ?? "—"}</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {clientEmail && (
+                    <a
+                      href={`mailto:${clientEmail}`}
+                      className="text-xs font-semibold bg-brand-dark text-white px-3 py-1.5 rounded-xl hover:bg-brand-dark/90 transition-colors"
+                    >
+                      ✉️ Enviar email
+                    </a>
+                  )}
+                  {whatsAppHref(clientProfile.phone) && (
+                    <a
+                      href={whatsAppHref(clientProfile.phone)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold bg-emerald-600 text-white px-3 py-1.5 rounded-xl hover:bg-emerald-700 transition-colors"
+                    >
+                      💬 WhatsApp
+                    </a>
+                  )}
                 </div>
-                <div>
-                  <p className="text-brand-muted text-xs">Telefone</p>
-                  <p className="text-brand-dark font-medium">{clientProfile.phone ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-brand-muted text-xs">Cidade</p>
-                  <p className="text-brand-dark font-medium">{clientProfile.city ?? "—"}</p>
-                </div>
-              </div>
+              </>
             ) : (
               <p className="text-xs text-brand-muted">ID: {service.client_id}</p>
             )}
           </div>
 
           {/* Technician */}
-          <div className="card space-y-2">
+          <div className="card space-y-3">
             <h2 className="font-heading font-bold text-brand-dark text-base">🔧 Técnico</h2>
             {service.technician_id ? (
               techProfile ? (
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-brand-muted text-xs">Nome</p>
-                    <p className="text-brand-dark font-medium">{techProfile.full_name ?? "—"}</p>
+                <>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-brand-muted text-xs">Nome</p>
+                      <p className="text-brand-dark font-medium">{techProfile.full_name ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-brand-muted text-xs">Email</p>
+                      <p className="text-brand-dark font-medium break-all">{techEmail ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-brand-muted text-xs">Telefone</p>
+                      <p className="text-brand-dark font-medium">{techProfile.phone ?? "—"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-brand-muted text-xs">Email</p>
-                    <p className="text-brand-dark font-medium">{techProfile.email ?? "—"}</p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {techEmail && (
+                      <a
+                        href={`mailto:${techEmail}`}
+                        className="text-xs font-semibold bg-brand-dark text-white px-3 py-1.5 rounded-xl hover:bg-brand-dark/90 transition-colors"
+                      >
+                        ✉️ Enviar email
+                      </a>
+                    )}
+                    {whatsAppHref(techProfile.phone) && (
+                      <a
+                        href={whatsAppHref(techProfile.phone)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold bg-emerald-600 text-white px-3 py-1.5 rounded-xl hover:bg-emerald-700 transition-colors"
+                      >
+                        💬 WhatsApp
+                      </a>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-brand-muted text-xs">Telefone</p>
-                    <p className="text-brand-dark font-medium">{techProfile.phone ?? "—"}</p>
-                  </div>
-                </div>
+                </>
               ) : (
                 <p className="text-xs text-brand-muted">ID: {service.technician_id}</p>
               )

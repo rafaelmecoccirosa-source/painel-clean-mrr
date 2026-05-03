@@ -25,6 +25,8 @@ export type Servico = {
   data: string;
   cidade: string;
   clienteNome: string;
+  clienteEmail: string | null;
+  clienteTelefone: string | null;
   tecnicoNome: string;
   modulos: number;
   valor: number;
@@ -168,7 +170,17 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
                   <td className="px-4 py-3 text-brand-muted font-mono text-[10px]">{s.id.slice(0, 8)}</td>
                   <td className="px-4 py-3 text-brand-muted">{s.data}</td>
                   <td className="px-4 py-3 font-medium text-brand-dark">📍 {s.cidade}</td>
-                  <td className="px-4 py-3 text-brand-dark">{s.clienteNome}</td>
+                  <td className="px-4 py-3 text-brand-dark">
+                    <div className="font-medium">{s.clienteNome}</div>
+                    {(s.clienteEmail || s.clienteTelefone) && (
+                      <div className="text-[10px] text-brand-muted leading-tight mt-0.5 space-y-0.5">
+                        {s.clienteEmail && (
+                          <div className="truncate max-w-[180px]" title={s.clienteEmail}>✉️ {s.clienteEmail}</div>
+                        )}
+                        {s.clienteTelefone && <div>📞 {s.clienteTelefone}</div>}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {s.status === 'pending' && s.tecnicoNome === '—' ? (
                       assigningId === s.id ? (
@@ -226,6 +238,12 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
                 <p className="font-semibold text-brand-dark text-sm">{s.clienteNome}</p>
                 {statusLabel(s.status)}
               </div>
+              {(s.clienteEmail || s.clienteTelefone) && (
+                <div className="text-[11px] text-brand-muted space-y-0.5">
+                  {s.clienteEmail && <div className="truncate">✉️ {s.clienteEmail}</div>}
+                  {s.clienteTelefone && <div>📞 {s.clienteTelefone}</div>}
+                </div>
+              )}
               <p className="text-xs text-brand-muted">📍 {s.cidade} · {s.data} · ☀️ {s.modulos} módulos</p>
               <div className="flex items-center gap-3 text-xs justify-between">
                 <div className="flex gap-3">
