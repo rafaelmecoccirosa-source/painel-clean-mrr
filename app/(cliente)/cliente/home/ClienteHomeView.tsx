@@ -35,6 +35,7 @@ export type ClienteHomeProps = {
   quedaPct?: number;
   historico: HistoricoRow[];
   isDemo: boolean;
+  proximoServiceRequestId?: string | null;
 };
 
 export default function ClienteHomeView(props: ClienteHomeProps) {
@@ -45,7 +46,7 @@ export default function ClienteHomeView(props: ClienteHomeProps) {
     limpezasUsadas, limpezasTotal, economiaAcumulada, economiaLastMonth,
     heroState, proximaLimpezaDias, proximaLimpezaData, proximaLimpezaTurno,
     cidade, tecnico, eficiencia, geracao, geracaoMeta, mesRelatorio, quedaPct,
-    historico, isDemo,
+    historico, isDemo, proximoServiceRequestId,
   } = props;
 
   return (
@@ -139,6 +140,7 @@ export default function ClienteHomeView(props: ClienteHomeProps) {
         atualData={proximaLimpezaData}
         atualTurno={proximaLimpezaTurno}
         tecnico={tecnico}
+        serviceRequestId={proximoServiceRequestId ?? null}
       />
     </>
   );

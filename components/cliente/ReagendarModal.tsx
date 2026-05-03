@@ -11,12 +11,21 @@ function formatDay(d: Date) {
   return `${DOW[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function toIsoDate(d: Date) {
+  // YYYY-MM-DD em fuso local (não UTC) para casar com preferred_date
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export default function ReagendarModal({
   open,
   onClose,
   atualData,
   atualTurno,
   tecnico,
+  serviceRequestId = null,
   onConfirm,
 }: {
   open: boolean;
@@ -24,6 +33,7 @@ export default function ReagendarModal({
   atualData: string;
   atualTurno: string;
   tecnico: string;
+  serviceRequestId?: string | null;
   onConfirm?: (newDate: Date, shift: 'manha' | 'tarde') => void;
 }) {
   const today = useMemo(() => new Date(), []);
@@ -41,11 +51,13 @@ export default function ReagendarModal({
   const [sel, setSel] = useState<Date>(days[3]);
   const [shift, setShift] = useState<'manha' | 'tarde'>('manha');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setStep('pick');
       setLoading(false);
+      setError(null);
       setSel(days[3]);
       setShift('manha');
     }
@@ -60,16 +72,35 @@ export default function ReagendarModal({
 
   if (!open) return null;
 
-  const submit = () => {
+  const submit = async () => {
     setLoading(true);
-    setTimeout(() => {
+    setError(null);
+    try {
+      const res = await fetch('/api/cliente/reagendar', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_request_id: serviceRequestId,
+          preferred_date:     toIsoDate(sel),
+          preferred_time:     shift,
+        }),
+      });
+      const payload = (await res.json()) as { success?: boolean; error?: string };
+      if (!res.ok || !payload.success) {
+        setError(payload.error ?? 'Não foi possível reagendar. Tente novamente.');
+        setLoading(false);
+        return;
+      }
       setLoading(false);
       setStep('done');
       setTimeout(() => {
         onConfirm?.(sel, shift);
         onClose();
       }, 1400);
-    }, 800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro inesperado.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -295,8 +326,24 @@ export default function ReagendarModal({
               ))}
             </ul>
 
+            {error && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: '#FEF2F2',
+                  border: '1px solid #FCA5A5',
+                  color: '#991B1B',
+                  fontSize: 13,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
-              <Button variant="secondary" onClick={() => setStep('pick')}>
+              <Button variant="secondary" onClick={() => setStep('pick')} disabled={loading}>
                 ← Voltar
               </Button>
               <Button variant="primary" disabled={loading} onClick={submit}>

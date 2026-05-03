@@ -258,6 +258,7 @@ export default async function ClienteHomePage() {
     quedaPct,
     historico,
     isDemo: false,
+    proximoServiceRequestId: nextSvc?.id ?? null,
   };
 
   return <ClienteHomeView {...props} />;
