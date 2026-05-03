@@ -135,6 +135,23 @@
 ──────────────────────────────────────────────────────────────────────────── */
 .pc-mobile-only { display: none; }
 
+/* Outline button no hero (dark background): força fundo transparente
+   e borda branca sólida, vencendo o estilo nativo de <button> em iOS
+   Safari (que renderiza um fundo cinza/branco mesmo com background:
+   'transparent' inline). Aplicado em todas as breakpoints. */
+.pc-btn-hero-outline,
+.pc-btn-hero-outline:hover,
+.pc-btn-hero-outline:focus,
+.pc-btn-hero-outline:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1.5px solid #ffffff !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
 @media (max-width: 640px) {
   .pc-mobile-stack {
     grid-template-columns: 1fr !important;

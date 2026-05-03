@@ -144,7 +144,7 @@ function HeroHealthy({ userFirst, plano, proximaLimpezaDias, proximaLimpezaData,
             <Button variant="primary" size="lg">Ver relatório →</Button>
           </Link>
           <Link href="/cliente/plano" style={{ textDecoration: 'none' }}>
-            <Button variant="outline" size="lg" onClick={() => onAvulsa?.()}>Meu plano</Button>
+            <Button variant="outline" size="lg" className="pc-btn-hero-outline" onClick={() => onAvulsa?.()}>Meu plano</Button>
           </Link>
         </div>
       </div>
@@ -177,7 +177,7 @@ function HeroPost({ plano, eficiencia, eficienciaAntes = 86 }: HeroProps) {
         </p>
         <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver relatório fotográfico</Button>
-          <Button variant="outline" size="lg">Avaliar serviço ⭐</Button>
+          <Button variant="outline" size="lg" className="pc-btn-hero-outline">Avaliar serviço ⭐</Button>
         </div>
       </div>
       <div className="pc-hero-donut" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -215,7 +215,7 @@ function HeroSoon({ plano, proximaLimpezaDias, proximaLimpezaData, tecnico, onRe
         </p>
         <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver detalhes do serviço</Button>
-          <Button variant="outline" size="lg" onClick={() => onReagendar?.()}>Reagendar</Button>
+          <Button variant="outline" size="lg" className="pc-btn-hero-outline" onClick={() => onReagendar?.()}>Reagendar</Button>
         </div>
       </div>
       <TechCard tecnico={tecnico} />
@@ -237,7 +237,7 @@ function HeroDrop({ plano, quedaPct = 8, geracao, geracaoMeta, onReagendar }: He
         </p>
         <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg" onClick={() => onReagendar?.()}>⚡ Solicitar limpeza agora</Button>
-          <Button variant="outline" size="lg">Ver relatório</Button>
+          <Button variant="outline" size="lg" className="pc-btn-hero-outline">Ver relatório</Button>
         </div>
       </div>
       <div className="pc-hero-donut" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -260,7 +260,7 @@ function HeroReport({ plano, mesRelatorio = 'março', geracao, eficiencia }: Her
         </p>
         <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver relatório →</Button>
-          <Button variant="outline" size="lg">Baixar PDF</Button>
+          <Button variant="outline" size="lg" className="pc-btn-hero-outline">Baixar PDF</Button>
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, paddingRight: 8 }}>

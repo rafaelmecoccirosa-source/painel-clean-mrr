@@ -86,7 +86,7 @@ export function Button({
     outline: {
       background: hover ? 'rgba(255,255,255,0.12)' : 'transparent',
       color: 'white',
-      border: '1.5px solid rgba(255,255,255,0.6)',
+      border: '1.5px solid white',
     },
   };
   const sizes: Record<Size, CSSProperties> = {

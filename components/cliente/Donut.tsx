@@ -3,7 +3,7 @@ import { COLORS } from '@/lib/brand-tokens';
 export default function Donut({
   value,
   size = 180,
-  stroke = 7,
+  stroke = 6,
   color = COLORS.green,
   baseline,
   label,
@@ -19,7 +19,7 @@ export default function Donut({
   deltaLabel?: string;
   pulse?: boolean;
 }) {
-  const r = 42;
+  const r = 38;
   const c = 2 * Math.PI * r;
   const PAD = 10;
   return (
@@ -85,12 +85,12 @@ export default function Donut({
       />
       <text
         x="50"
-        y={label || deltaLabel ? 44 : 52}
+        y={label || deltaLabel ? 46 : 52}
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="Montserrat,sans-serif"
         fontWeight="900"
-        fontSize="22"
+        fontSize="20"
         fill="white"
         letterSpacing="-0.03em"
       >
@@ -99,7 +99,7 @@ export default function Donut({
       {label && (
         <text
           x="50"
-          y="58"
+          y="62"
           textAnchor="middle"
           fontFamily="Open Sans,sans-serif"
           fontWeight="700"
@@ -113,7 +113,7 @@ export default function Donut({
       {deltaLabel && (
         <text
           x="50"
-          y="70"
+          y="72"
           textAnchor="middle"
           fontFamily="Montserrat,sans-serif"
           fontWeight="800"
