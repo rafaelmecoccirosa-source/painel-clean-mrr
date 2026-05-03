@@ -152,6 +152,15 @@
   -webkit-tap-highlight-color: transparent !important;
 }
 
+/* Wrapper do donut no hero precisa de stacking context próprio para
+   ficar acima do SVG decorativo (raio) que vive no mesmo container.
+   Sem position+zIndex aqui o iOS Safari renderiza o raio sobre o
+   donut quando o hero empilha no mobile. */
+.pc-hero-donut {
+  position: relative;
+  z-index: 2;
+}
+
 @media (max-width: 640px) {
   .pc-mobile-stack {
     grid-template-columns: 1fr !important;
