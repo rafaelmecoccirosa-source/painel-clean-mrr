@@ -401,8 +401,9 @@ function StepDetalhes({
           <FieldLabel>Observações (opcional)</FieldLabel>
           <textarea
             value={obs}
-            onChange={(e) => setObs(e.target.value)}
+            onChange={(e) => setObs(e.target.value.slice(0, 500))}
             rows={3}
+            maxLength={500}
             placeholder="Pontos de atenção, acesso ao telhado..."
             style={{
               width: '100%',
@@ -416,6 +417,7 @@ function StepDetalhes({
               resize: 'vertical',
             }}
           />
+          <CharCounter value={obs.length} max={500} />
         </div>
 
         {modulos > 0 && (
@@ -722,6 +724,23 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
       <span style={{ color: COLORS.muted }}>{label}</span>
       <span style={{ color: COLORS.dark, fontWeight: 600, textAlign: 'right' }}>{value}</span>
+    </div>
+  );
+}
+
+function CharCounter({ value, max }: { value: number; max: number }) {
+  const warn = value > max * 0.9;
+  return (
+    <div
+      style={{
+        marginTop: 6,
+        fontSize: 11,
+        textAlign: 'right',
+        color: warn ? '#DC2626' : COLORS.muted,
+        fontWeight: warn ? 700 : 500,
+      }}
+    >
+      {value}/{max} caracteres
     </div>
   );
 }

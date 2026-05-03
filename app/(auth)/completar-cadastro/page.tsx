@@ -99,6 +99,15 @@ function StepBar({ steps, current }: { steps: string[]; current: number }) {
   );
 }
 
+function CharCounter({ value, max }: { value: number; max: number }) {
+  const warn = value > max * 0.9;
+  return (
+    <div className={`mt-1 text-[11px] text-right ${warn ? 'text-red-600 font-bold' : 'text-brand-muted'}`}>
+      {value}/{max} caracteres
+    </div>
+  );
+}
+
 function ErrorBanner({ msg }: { msg: string }) {
   return (
     <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
@@ -624,9 +633,11 @@ export default function CompletarCadastroPage() {
                     id="experiencia"
                     placeholder="Ex: Eletricista há 5 anos, já realizei limpezas em usinas residenciais e comerciais em Jaraguá do Sul."
                     className="input-base min-h-[90px] resize-y"
+                    maxLength={1000}
                     value={experiencia}
-                    onChange={(e) => setExperiencia(e.target.value)}
+                    onChange={(e) => setExperiencia(e.target.value.slice(0, 1000))}
                   />
+                  <CharCounter value={experiencia.length} max={1000} />
                 </div>
                 <div>
                   <label className="label-base" htmlFor="certificacoes">Certificações (opcional)</label>
@@ -635,8 +646,9 @@ export default function CompletarCadastroPage() {
                     type="text"
                     placeholder="Ex: NR10, NR35, SENAI Energia Solar"
                     className="input-base"
+                    maxLength={200}
                     value={certificacoes}
-                    onChange={(e) => setCertificacoes(e.target.value)}
+                    onChange={(e) => setCertificacoes(e.target.value.slice(0, 200))}
                   />
                 </div>
                 <div>

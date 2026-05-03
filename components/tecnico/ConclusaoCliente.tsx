@@ -296,11 +296,15 @@ export default function ConclusaoCliente({
           </label>
           <textarea
             value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
+            onChange={(e) => setObservacoes(e.target.value.slice(0, 500))}
             placeholder="Descreva condições, problemas encontrados, recomendações…"
             rows={3}
+            maxLength={500}
             className={`${inputBase} resize-none`}
           />
+          <div className={`mt-1 text-[11px] text-right ${observacoes.length > 450 ? 'text-red-600 font-bold' : 'text-brand-muted'}`}>
+            {observacoes.length}/500 caracteres
+          </div>
         </div>
 
         <div className="border-t border-brand-border pt-4">
