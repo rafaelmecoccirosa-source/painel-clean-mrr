@@ -52,7 +52,17 @@ function HeroShell({
 
       <svg
         viewBox="0 0 200 200"
-        style={{ position: 'absolute', right: -30, top: -20, width: 280, opacity: 0.09, zIndex: 0 }}
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          width: 220,
+          height: 220,
+          opacity: 0.08,
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
       >
         <path d="M110 10 L40 120 L95 120 L80 190 L160 70 L105 70 Z" fill={COLORS.green} />
       </svg>
