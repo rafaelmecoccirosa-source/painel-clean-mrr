@@ -58,6 +58,12 @@ export function Button({
     whiteSpace: 'nowrap',
     width: fullWidth ? '100%' : undefined,
     transform: press ? 'scale(0.98)' : hover ? 'translateY(-1px)' : 'none',
+    // iOS Safari renders <button> com fundo cinza/branco por padrão.
+    // Sem o reset, a variante "outline" (fundo transparente) fica
+    // branca sobre branco em iPhones.
+    WebkitAppearance: 'none',
+    appearance: 'none',
+    WebkitTapHighlightColor: 'transparent',
   };
   const variants: Record<Variant, CSSProperties> = {
     primary: {

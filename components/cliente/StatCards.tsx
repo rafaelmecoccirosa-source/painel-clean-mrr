@@ -80,7 +80,7 @@ export function NextCleaningCard({
       </div>
       <div style={{ fontSize: 13, color: COLORS.dark, marginTop: 10, fontWeight: 600 }}>{data}</div>
       <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
-        {turno} · {cidade}
+        {turno && turno !== '—' ? `${turno} · ${cidade}` : cidade}
       </div>
       <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
         <Button
