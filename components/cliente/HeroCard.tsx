@@ -54,6 +54,7 @@ function HeroShell({
       <svg
         viewBox="0 0 200 200"
         aria-hidden="true"
+        className="pc-hero-bolt"
         style={{
           position: 'absolute',
           right: 0,

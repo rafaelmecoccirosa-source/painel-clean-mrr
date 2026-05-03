@@ -207,6 +207,11 @@
   .pc-mobile-text-shrink { font-size: 22px !important; }
   .pc-mobile-h-pad-tight  { padding-left: 16px !important; padding-right: 16px !important; }
 
+  /* Esconde o SVG decorativo de raio no hero mobile — em layout
+     empilhado o raio (canto superior direito) ficava por cima do
+     texto da seção. */
+  .pc-hero-bolt { display: none !important; }
+
   /* Hero — coluna no mobile, com donut centralizado abaixo do texto */
   .pc-hero-section {
     padding: 20px !important;
