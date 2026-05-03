@@ -210,9 +210,13 @@
   .pc-hero-buttons > a > button {
     width: 100% !important;
   }
+  .pc-hero-donut {
+    margin-top: 16px !important;
+    margin-bottom: 8px !important;
+  }
   .pc-hero-donut svg {
-    width: 90px !important;
-    height: 90px !important;
+    width: 130px !important;
+    height: 130px !important;
   }
   .pc-hero-donut > div {
     padding: 0 !important;
@@ -221,6 +225,16 @@
   /* Hide the pulse ring on mobile — it uses fixed 180px geometry */
   .pc-hero-donut span[aria-hidden] {
     display: none !important;
+  }
+  /* Texto abaixo do donut (kWh / mês atual) */
+  .pc-hero-donut > div + div {
+    text-align: center !important;
+  }
+  .pc-hero-donut > div + div > div:first-child {
+    font-size: 13px !important;
+  }
+  .pc-hero-donut > div + div > div:last-child {
+    font-size: 12px !important;
   }
 
   /* Page-level helpers */
