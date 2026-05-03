@@ -11,9 +11,9 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 const PLAN_LIMPEZAS: Record<string, number> = {
-  basic: 2,
-  standard: 3,
-  plus: 4,
+  basic:    2,
+  standard: 2,
+  plus:     4,
 };
 
 const MONTH_NAMES = [
@@ -198,9 +198,22 @@ export default async function ClienteHomePage() {
   const planLabel = PLAN_LABEL[sub.plan_type] ?? sub.plan_type;
   const limpezasTotal = PLAN_LIMPEZAS[sub.plan_type] ?? 2;
 
+  // Início do ciclo anual atual: aniversário do started_at no ano corrente.
+  // Se a próxima data ainda não chegou neste ano, o ciclo começou no ano
+  // passado.
   const subStart = sub.started_at ? new Date(sub.started_at as string) : new Date(0);
+  const cycleStart = new Date(subStart);
+  const today = new Date();
+  cycleStart.setFullYear(today.getFullYear());
+  if (cycleStart.getTime() > today.getTime()) {
+    cycleStart.setFullYear(today.getFullYear() - 1);
+  }
+
   const limpezasUsadas = completed.filter(s =>
-    s.preferred_date && new Date(s.preferred_date + 'T00:00:00') >= subStart,
+    s.origin === 'subscription' &&
+    s.status === 'completed' &&
+    s.preferred_date &&
+    new Date(s.preferred_date + 'T00:00:00') >= cycleStart,
   ).length;
 
   const geracaoMeta = lastReport?.kwh_expected
