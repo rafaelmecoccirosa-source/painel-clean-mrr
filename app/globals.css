@@ -234,6 +234,19 @@
   .pc-mobile-chart-200 > * {
     height: 200px !important;
   }
+
+  /* Header bits — drop the avatar's vertical separator and shrink the
+     notifications dropdown so it fits a 390px viewport. */
+  .pc-profile-wrap {
+    border-left: none !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+  .pc-notif-dropdown {
+    width: calc(100vw - 24px) !important;
+    max-width: 340px !important;
+    right: -8px !important;
+  }
 }
 
 /* Hamburger drawer for the cliente header. */

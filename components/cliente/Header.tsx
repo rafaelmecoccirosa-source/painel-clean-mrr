@@ -82,6 +82,21 @@ export default function Header({
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  // Auto-close drawer when route changes (covers cases where the user
+  // navigates via bell/profile dropdowns instead of the drawer links).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll while drawer is open
+  useEffect(() => {
+    if (drawerOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [drawerOpen]);
+
   const unreadCount = notifs.filter((n) => !n.read_at).length;
 
   const handleMarkAllRead = async () => {
@@ -171,7 +186,7 @@ export default function Header({
             </button>
 
             {notifOpen && (
-              <div style={{
+              <div className="pc-notif-dropdown" style={{
                 position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 340,
                 background: 'white', border: `1px solid ${COLORS.border}`, borderRadius: 12,
                 boxShadow: '0 16px 32px rgba(27,58,45,.18)', overflow: 'hidden', zIndex: 60,
@@ -217,7 +232,7 @@ export default function Header({
           </div>
 
           {/* Profile */}
-          <div ref={profileRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 10, marginLeft: 2, borderLeft: `1px solid ${COLORS.border}` }}>
+          <div ref={profileRef} className="pc-profile-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 10, marginLeft: 2, borderLeft: `1px solid ${COLORS.border}` }}>
             <button
               onClick={() => { setProfileOpen((v) => !v); setNotifOpen(false); }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
