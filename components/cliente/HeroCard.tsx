@@ -36,6 +36,7 @@ function HeroShell({
   const isCelebrate = state === 'post_cleaning' || state === 'report';
   return (
     <section
+      className="pc-hero-section"
       style={{
         position: 'relative',
         background: `linear-gradient(135deg, ${COLORS.dark} 0%, #0E251C 100%)`,
@@ -68,6 +69,7 @@ function HeroShell({
       </svg>
 
       <div
+        className="pc-hero-stack"
         style={{
           position: 'relative',
           zIndex: 1,
@@ -129,7 +131,7 @@ function HeroHealthy({ userFirst, plano, proximaLimpezaDias, proximaLimpezaData,
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', marginBottom: 6, fontWeight: 500 }}>
           Olá, {userFirst} ☀️
         </div>
-        <h1 style={TitleStyle()}>
+        <h1 className="pc-hero-title" style={TitleStyle()}>
           Sua usina está <span style={{ color: COLORS.green }}>saudável</span> e a{' '}
           <span style={{ color: COLORS.green }}>{proximaLimpezaDias} dias</span> da próxima limpeza.
         </h1>
@@ -137,7 +139,7 @@ function HeroHealthy({ userFirst, plano, proximaLimpezaDias, proximaLimpezaData,
           Gerando <b style={{ color: 'white' }}>{eficiencia}%</b> do esperado. Próxima limpeza em{' '}
           <b style={{ color: 'white' }}>{proximaLimpezaData}</b>.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+        <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Link href="/cliente/relatorios" style={{ textDecoration: 'none' }}>
             <Button variant="primary" size="lg">Ver relatório →</Button>
           </Link>
@@ -147,7 +149,7 @@ function HeroHealthy({ userFirst, plano, proximaLimpezaDias, proximaLimpezaData,
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div className="pc-hero-donut" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <Donut value={eficiencia} label="EFICIÊNCIA" pulse />
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,.85)', fontWeight: 600 }}>
@@ -166,19 +168,19 @@ function HeroPost({ plano, eficiencia, eficienciaAntes = 86 }: HeroProps) {
     <>
       <div>
         <HeaderBadges plano={plano} primary={<Badge tone="green">✓ Limpeza concluída</Badge>} />
-        <h1 style={TitleStyle()}>
+        <h1 className="pc-hero-title" style={TitleStyle()}>
           Sua geração subiu <span style={{ color: COLORS.green }}>{delta}%</span> após a limpeza.
         </h1>
         <p style={SubStyle()}>
           De <b style={{ color: 'white' }}>{eficienciaAntes}%</b> para <b style={{ color: 'white' }}>{eficiencia}%</b> de eficiência em 48h. Relatório
           fotográfico com <b style={{ color: 'white' }}>24 fotos</b> antes/depois disponível.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+        <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver relatório fotográfico</Button>
           <Button variant="outline" size="lg">Avaliar serviço ⭐</Button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div className="pc-hero-donut" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <Donut value={eficiencia} baseline={eficienciaAntes} label="EFICIÊNCIA" />
         <div
           style={{
@@ -207,11 +209,11 @@ function HeroSoon({ plano, proximaLimpezaDias, proximaLimpezaData, tecnico, onRe
     <>
       <div>
         <HeaderBadges plano={plano} primary={<Badge tone="amber">⏰ Limpeza em {proximaLimpezaDias} dias</Badge>} />
-        <h1 style={TitleStyle()}>Sua limpeza está chegando.</h1>
+        <h1 className="pc-hero-title" style={TitleStyle()}>Sua limpeza está chegando.</h1>
         <p style={SubStyle()}>
           <b style={{ color: 'white' }}>{proximaLimpezaData}</b> · Técnico <b style={{ color: 'white' }}>{tecnico}</b>. Turno da manhã.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+        <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver detalhes do serviço</Button>
           <Button variant="outline" size="lg" onClick={() => onReagendar?.()}>Reagendar</Button>
         </div>
@@ -226,19 +228,19 @@ function HeroDrop({ plano, quedaPct = 8, geracao, geracaoMeta, onReagendar }: He
     <>
       <div>
         <HeaderBadges plano={plano} primary={<Badge tone="amber">⚠️ Queda detectada</Badge>} />
-        <h1 style={TitleStyle()}>
+        <h1 className="pc-hero-title" style={TitleStyle()}>
           Detectamos queda de <span style={{ color: '#FBBF24' }}>{quedaPct}%</span> na geração.
         </h1>
         <p style={SubStyle()}>
           Sua usina gerou <b style={{ color: 'white' }}>{geracao} kWh</b> este mês vs <b style={{ color: 'white' }}>{geracaoMeta} kWh</b>{' '}
           esperados. Recomendamos limpeza antecipada — <b style={{ color: COLORS.green }}>sem custo extra</b>.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+        <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg" onClick={() => onReagendar?.()}>⚡ Solicitar limpeza agora</Button>
           <Button variant="outline" size="lg">Ver relatório</Button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div className="pc-hero-donut" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <Donut value={Math.max(0, 94 - quedaPct)} baseline={94} color="#D97706" label="EFICIÊNCIA" deltaLabel={`↓ ${quedaPct}% vs média`} />
       </div>
     </>
@@ -250,13 +252,13 @@ function HeroReport({ plano, mesRelatorio = 'março', geracao, eficiencia }: Her
     <>
       <div>
         <HeaderBadges plano={plano} primary={<Badge tone="blue">📄 Relatório disponível</Badge>} />
-        <h1 style={TitleStyle()}>
+        <h1 className="pc-hero-title" style={TitleStyle()}>
           Seu relatório de <span style={{ color: COLORS.green }}>{mesRelatorio}</span> chegou.
         </h1>
         <p style={SubStyle()}>
           Você gerou <b style={{ color: 'white' }}>{geracao} kWh</b> · eficiência <b style={{ color: 'white' }}>{eficiencia}%</b>.
         </p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+        <div className="pc-hero-buttons" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
           <Button variant="primary" size="lg">Ver relatório →</Button>
           <Button variant="outline" size="lg">Baixar PDF</Button>
         </div>

@@ -180,6 +180,60 @@
   }
   .pc-mobile-text-shrink { font-size: 22px !important; }
   .pc-mobile-h-pad-tight  { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Hero — coluna no mobile, com donut centralizado abaixo do texto */
+  .pc-hero-section {
+    padding: 20px !important;
+    border-radius: 18px !important;
+    min-height: 0 !important;
+  }
+  .pc-hero-stack {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    justify-items: stretch !important;
+  }
+  .pc-hero-stack > :last-child {
+    justify-self: center !important;
+  }
+  .pc-hero-title {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+  }
+  .pc-hero-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .pc-hero-buttons > a,
+  .pc-hero-buttons > button {
+    width: 100% !important;
+  }
+  .pc-hero-buttons > a > button {
+    width: 100% !important;
+  }
+  .pc-hero-donut svg {
+    width: 90px !important;
+    height: 90px !important;
+  }
+  .pc-hero-donut > div {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Hide the pulse ring on mobile — it uses fixed 180px geometry */
+  .pc-hero-donut span[aria-hidden] {
+    display: none !important;
+  }
+
+  /* Page-level helpers */
+  .pc-mobile-page-title {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+  }
+  .pc-mobile-card {
+    padding: 16px !important;
+  }
+  .pc-mobile-chart-200 > * {
+    height: 200px !important;
+  }
 }
 
 /* Hamburger drawer for the cliente header. */
