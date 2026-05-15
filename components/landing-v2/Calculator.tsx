@@ -213,7 +213,7 @@ export default function Calculator() {
               <Eyebrow>Planos disponíveis</Eyebrow>
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {planos.map((p) => {
-                  const sel = planoSel === p.id;
+                  const sel = !custom && planoSel === p.id;
                   const autoMatch = planoAuto === p.id;
                   return (
                     <button
@@ -304,18 +304,68 @@ export default function Calculator() {
                 {custom && (
                   <div
                     style={{
-                      padding: '11px 14px',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '12px 14px',
                       borderRadius: 11,
-                      border: `1.5px dashed ${COLORS.muted}`,
-                      background: COLORS.bg,
-                      fontFamily: "'Open Sans',sans-serif",
-                      fontSize: 12.5,
-                      color: COLORS.muted,
-                      lineHeight: 1.5,
+                      border: `2px solid ${COLORS.green}`,
+                      background: COLORS.dark,
                     }}
                   >
-                    <strong style={{ color: COLORS.dark, fontWeight: 700 }}>60+ módulos →</strong> plano Pro
-                    com condição personalizada
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Montserrat',sans-serif",
+                          fontWeight: 800,
+                          fontSize: 15,
+                          color: 'white',
+                          letterSpacing: '-.01em',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        Pro / Business
+                        <span
+                          style={{
+                            fontFamily: "'Open Sans',sans-serif",
+                            fontSize: 9,
+                            fontWeight: 800,
+                            letterSpacing: '.08em',
+                            textTransform: 'uppercase',
+                            background: COLORS.green,
+                            color: 'white',
+                            padding: '3px 7px',
+                            borderRadius: 9999,
+                          }}
+                        >
+                          ✓ sugerido
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "'Open Sans',sans-serif",
+                          fontSize: 12,
+                          color: 'rgba(255,255,255,0.6)',
+                          marginTop: 2,
+                        }}
+                      >
+                        60+ módulos → condição personalizada
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Montserrat',sans-serif",
+                        fontWeight: 800,
+                        fontSize: 17,
+                        color: '#6EE7A0',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      sob consulta
+                    </div>
                   </div>
                 )}
               </div>
@@ -507,7 +557,7 @@ export default function Calculator() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  💰 Economia em 3 anos vs avulso
+                  {custom ? '⚡ PAINEL CLEAN BUSINESS' : '💰 Economia em 3 anos vs avulso'}
                 </div>
 
                 {!custom ? (
@@ -658,16 +708,60 @@ export default function Calculator() {
                         marginTop: 12,
                         fontFamily: "'Montserrat',sans-serif",
                         fontWeight: 800,
-                        fontSize: isMobile ? 22 : 26,
+                        fontSize: isMobile ? 20 : 24,
                         color: 'white',
-                        lineHeight: 1.15,
+                        lineHeight: 1.2,
                         letterSpacing: '-.01em',
                       }}
                     >
-                      Usinas acima de 60 módulos ganham condição personalizada.
+                      Sua usina de {modulos} módulos tem condição especial.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        fontFamily: "'Open Sans',sans-serif",
+                        fontSize: 13.5,
+                        color: 'rgba(255,255,255,0.7)',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Usinas acima de 60 módulos entram no plano Business com atendimento prioritário e preço sob consulta.
+                    </div>
+                    <div style={{ marginTop: 20, textAlign: 'center' }}>
+                      <div
+                        style={{
+                          fontFamily: "'Montserrat',sans-serif",
+                          fontWeight: 900,
+                          fontSize: isMobile ? 52 : 68,
+                          color: '#6EE7A0',
+                          letterSpacing: '-.04em',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {(modulos * 0.8).toFixed(0)}%
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "'Open Sans',sans-serif",
+                          fontSize: 11.5,
+                          color: 'rgba(255,255,255,0.55)',
+                          marginTop: 6,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '.1em',
+                        }}
+                      >
+                        economia estimada vs avulso
+                      </div>
                     </div>
                     <div style={{ marginTop: 'auto', paddingTop: 18 }}>
-                      <Button variant="primary" size="lg" fullWidth>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        onClick={() => { window.location.href = '/cadastro'; }}
+                        style={{ boxShadow: '0 6px 18px rgba(61,196,90,0.4)' }}
+                      >
                         Fale com a gente →
                       </Button>
                     </div>
