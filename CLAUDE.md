@@ -35,7 +35,7 @@ Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netfl
 ### Nome e tagline
 - **Nome:** Painel Clean
 - **Tagline oficial:** "Limpeza e Cuidado para Usinas Solares"
-- **Tagline alternativa (header/rodapé):** "Limpeza e monitoramento solar"
+- **Tagline alternativa (header/rodapé):** "Limpeza e monitoramento de usinas solares"
 
 ### Tom de voz
 - Direto, confiante, próximo — como um especialista de confiança
@@ -137,7 +137,7 @@ Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netfl
 ## Os 3 perfis
 
 | Perfil | Rota | O que faz |
-|--------|------|-----------| 
+|--------|------|-----------|
 | `cliente` | `/cliente` | Assina plano, agenda limpezas, vê relatórios |
 | `tecnico` | `/tecnico` | Executa limpezas agendadas e avulsas |
 | `admin` | `/admin` | Intermedia, confirma, libera repasse, gerencia assinaturas |
@@ -156,17 +156,22 @@ Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netfl
 | Business | sob consulta | 200+ | customizado |
 
 ### Entrada e contrato
-- 1ª limpeza com **50% do preço avulso equivalente**
+- **1ª limpeza:** 50% do preço avulso equivalente (desconto de entrada para converter)
+- A partir do mês seguinte: mensalidade normal do plano
 - Contrato mínimo **12 meses com carência**
 - Cancelamento: paga saldo devedor do período restante
+- **Objetivo estratégico do avulso:** existe como âncora de preço para tornar a assinatura obviamente vantajosa — não é o produto principal
 
-### Preços avulso
+### Preços avulso (sem assinatura)
+Faixa regressiva por quantidade de módulos:
+
 | Faixa | Preço/módulo |
 |-------|-------------|
-| Até 30 módulos | R$ 30,00 |
+| Até 15 módulos | R$ 35,00 |
+| 16–30 módulos | R$ 30,00 |
 | 31–50 módulos | R$ 25,00 |
 | 51–100 módulos | R$ 20,00 |
-| 100+ | sob consulta |
+| 100+ módulos | sob consulta |
 
 ### Limpeza extra para assinantes
 - **40% mais barata** que o preço avulso equivalente
@@ -215,7 +220,6 @@ cep          text
 lat          float
 lng          float
 last_seen    timestamp  -- presença técnico (atualizado a cada 4min)
-approved_at  timestamptz  -- nullable — quando admin aprovou o técnico
 created_at   timestamp
 ```
 ⚠️ **SEMPRE** usar `.eq('user_id', user.id)` — nunca `.eq('id', user.id)`
@@ -261,7 +265,43 @@ pending → accepted → in_progress → completed
 cancelled (qualquer etapa)
 ```
 
-### Tabela `monthly_reports`
+### Tabela `service_reports` (relatório de limpeza — por serviço)
+Gerado pelo técnico ao concluir cada limpeza. Diferente do `monthly_reports` que é de performance mensal.
+
+```sql
+id                  uuid PRIMARY KEY
+service_request_id  uuid REFERENCES service_requests(id)
+technician_id       uuid REFERENCES auth.users(id)
+client_id           uuid REFERENCES auth.users(id)
+
+-- Fotos
+photos_before       text[]  -- URLs no Supabase Storage
+photos_after        text[]  -- URLs no Supabase Storage
+
+-- Checklist técnico (bool)
+check_fixacao       boolean  -- fixação e estrutura ok
+check_cabos         boolean  -- cabos e conexões ok
+check_inversor      boolean  -- inversor sem alertas
+check_sombra        boolean  -- ausência de sombreamento
+check_corrosao      boolean  -- sem sinais de corrosão
+check_limpeza       boolean  -- limpeza concluída
+
+-- Condições no momento
+condicao_antes      text  -- 'leve' | 'moderada' | 'pesada' | 'muito_pesada'
+eficiencia_visual   text  -- avaliação visual do técnico: 'otima' | 'boa' | 'regular' | 'ruim'
+
+-- Observações livres
+observacoes         text  -- nullable — anotações e recomendações do técnico
+
+-- Controle
+submitted_at        timestamp
+reviewed_at         timestamp  -- nullable — quando admin revisou
+created_at          timestamp
+```
+
+### Tabela `monthly_reports` (relatório de performance mensal — automático)
+Enviado todo mês ao cliente, mesmo sem visita. MVP = admin preenche manualmente. Pós-MVP = API do inversor.
+
 ```sql
 id               uuid PRIMARY KEY
 subscription_id  uuid REFERENCES subscriptions(id)
@@ -275,24 +315,11 @@ savings_estimated numeric
 alert_message    text  -- nullable — usado para estado 'drop' no hero
 report_pdf_url   text
 sent_at          timestamp
-read_at          timestamp  -- nullable — usado para estado 'report' no hero  ✓ existe (migration 20260421)
+read_at          timestamp  -- nullable — usado para estado 'report' no hero
 created_at       timestamp
 ```
 
-### Tabela `service_reports` ✓ existe (migration 20260422)
-```sql
-id                 uuid PRIMARY KEY
-service_request_id uuid REFERENCES service_requests(id)
-technician_id      uuid REFERENCES auth.users(id)
-photos_before      text[]
-photos_after       text[]
-checklist          jsonb  -- {fixacao, cabos, inversor, sombra, corrosao}: boolean
-condition_found    text
-notes              text
-created_at         timestamptz
-```
-
-### Tabela `referrals` (programa de indicações) ✓ existe (migration 20260421)
+### Tabela `referrals` (programa de indicações)
 ```sql
 id            uuid PRIMARY KEY
 referrer_id   uuid REFERENCES auth.users(id)  -- quem indicou
@@ -303,22 +330,29 @@ expires_at    timestamptz
 created_at    timestamptz DEFAULT now()
 ```
 
-### Tabela `notifications` ✓ existe (migration 20260422)
-```sql
-id         uuid PRIMARY KEY
-user_id    uuid REFERENCES auth.users(id)
-title      text NOT NULL
-body       text
-type       varchar(30)  -- 'service_update'|'report_ready'|'billing'|'system'
-read_at    timestamptz
-created_at timestamptz DEFAULT now()
-```
-RLS: usuário vê e altera apenas as próprias notificações (`auth.uid() = user_id`).
-
 ### RLS crítico
 - Admin: usar `auth.jwt() -> 'user_metadata' ->> 'role'` — nunca subquery em profiles (erro 42P17)
 - Queries admin: usar `createServiceClient()` (bypass RLS)
 - Queries cliente/técnico: usar `createClient()` (RLS aplica)
+
+---
+
+## Relatórios — dois tipos distintos
+
+### 1. Relatório de limpeza (`service_reports`)
+- **Quando:** após cada limpeza executada pelo técnico
+- **Quem preenche:** técnico, no app, antes de marcar serviço como concluído
+- **Conteúdo:** fotos antes/depois, checklist técnico (fixação, cabos, inversor, sombra, corrosão), condição encontrada, observações livres
+- **MVP:** técnico sobe no app — fotos + checks + observações
+- **Visível para:** cliente (histórico de limpezas) + admin (revisão antes de liberar repasse)
+
+### 2. Relatório mensal de performance (`monthly_reports`)
+- **Quando:** todo mês, independente de ter havido limpeza
+- **Quem preenche:** MVP = admin preenche manualmente. Pós-MVP = automático via API do inversor
+- **Conteúdo:** kWh gerado vs esperado, eficiência %, economia estimada, alerta se queda detectada
+- **Inversores compatíveis (pós-MVP):** Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye
+- **Visível para:** cliente (aba Relatórios no dashboard)
+- **Objetivo:** cliente "vê" o serviço funcionando todo mês — elimina churn por "não vi valor"
 
 ---
 
@@ -339,19 +373,27 @@ Técnico → /tecnico/chamados → aceita → status: accepted  (technician_id p
 ### 3. Execução
 ```
 Técnico → inicia serviço → status: in_progress
-Técnico → conclui + envia fotos → status: completed
+Técnico → executa limpeza
+Técnico → preenche service_report:
+          - fotos antes/depois
+          - checklist técnico
+          - condição encontrada
+          - observações
+Técnico → conclui → status: completed
 ```
 
 ### 4. Relatório e liberação
 ```
-Admin → revisa → libera repasse ao técnico (75% do valor)
-Cliente → recebe notificação → pode avaliar serviço
+Admin → revisa service_report → aprova qualidade
+Admin → libera repasse ao técnico (75% do valor)
+Cliente → recebe notificação → acessa relatório de limpeza → pode avaliar serviço
 ```
 
-### 6. Relatório mensal (automático — pós-MVP)
+### 5. Relatório mensal (todo mês)
 ```
-Sistema → busca dados do inversor via API → gera monthly_report
-        → envia email ao cliente → marca sent_at
+MVP:    Admin → preenche monthly_report manualmente → envia ao cliente
+Pós-MVP: Sistema → busca dados do inversor via API → gera monthly_report automaticamente
+         → envia email ao cliente → marca sent_at
 ```
 
 ---
@@ -361,7 +403,7 @@ Sistema → busca dados do inversor via API → gera monthly_report
 Lógica de estado (verificar nesta ordem):
 ```typescript
 // 1. post_cleaning: última limpeza há menos de 7 dias
-// 2. soon: próxima limpeza em <= 3 dias  
+// 2. soon: próxima limpeza em <= 3 dias
 // 3. drop: efficiency_pct do último monthly_report < 85% OU alert_message não null
 // 4. report: monthly_report do mês atual com read_at null
 // 5. healthy: padrão
@@ -439,14 +481,6 @@ Senha padrão: `Demo@2026!`
 
 **Admin:** `admin@painelclean.com.br`
 
-**Cenários hero por cliente (dados demo configurados no banco):**
-| Cliente | Hero state | Motivo |
-|---------|------------|--------|
-| Fernanda Alves | healthy | próxima limpeza em 45 dias |
-| Ana Silva | soon | limpeza em 2 dias |
-| Ricardo Mendes | post_cleaning | limpeza há 3 dias |
-| Maria Oliveira | drop | efficiency_pct 69.9% + alert_message ativo |
-
 ---
 
 ## Flags de config (`lib/config.ts`)
@@ -454,10 +488,11 @@ Senha padrão: `Demo@2026!`
 ```typescript
 SUBSCRIPTION_ENABLED = true
 AVULSO_ENABLED = true
-INVERTER_API_ENABLED = false  // pós-MVP
-FIRST_SERVICE_DISCOUNT = 0.50
-REFERRAL_DISCOUNT_PER = 0.06  // 6% por indicação
-REFERRAL_MAX_DISCOUNT = 0.30  // 30% máximo
+INVERTER_API_ENABLED = false        // pós-MVP — fase 3
+FIRST_SERVICE_DISCOUNT = 0.50       // 50% desconto na 1ª limpeza
+SUBSCRIBER_EXTRA_DISCOUNT = 0.40    // 40% desconto em limpezas extras p/ assinantes
+REFERRAL_DISCOUNT_PER = 0.06        // 6% por indicação
+REFERRAL_MAX_DISCOUNT = 0.30        // 30% máximo
 REFERRAL_VALIDITY_MONTHS = 12
 COMMISSION_PLATFORM = 0.25
 COMMISSION_TECNICO = 0.75
@@ -480,3 +515,5 @@ COMMISSION_TECNICO = 0.75
 - [ ] Menu cliente na ordem: Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
 - [ ] Partículas usando canvas-based de `components/landing-v2/shared.tsx`
 - [ ] Animações fade-up nas seções (classes do globals.css)
+- [ ] Relatório de limpeza (`service_reports`) preenchido pelo técnico antes de concluir serviço
+- [ ] Relatório mensal (`monthly_reports`) distinto do relatório de limpeza
