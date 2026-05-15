@@ -57,7 +57,7 @@
 - [ ] Endpoints que o app vai consumir — mapear rotas existentes
 - [ ] Autenticação mobile — Google OAuth + email/senha via Supabase Auth
 - [ ] Push notifications — definir provider (OneSignal, Expo, APNs)
-- [ ] Sincronizar decisões de design entre web e mobile
+- [x] Sincronizar decisões de design entre web e mobile (DESIGN_TOKENS.md adicionado ao repo)
 
 ---
 
