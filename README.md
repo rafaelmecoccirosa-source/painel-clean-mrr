@@ -1,75 +1,128 @@
-# PainelClean — Plataforma
+# Painel Clean — Plataforma MRR
 
-Marketplace de limpeza profissional de placas solares. Conecta clientes com técnicos certificados.
+Plataforma de limpeza de usinas solares no modelo **assinatura recorrente (Netflix)**. Conecta donos de painéis solares com técnicos certificados em Santa Catarina.
+
+> **Tagline:** Limpeza e Cuidado para Usinas Solares
 
 ## Stack
 
 - **Next.js 14** com App Router
 - **TypeScript**
 - **Tailwind CSS** com design system próprio
-- **Supabase** (Auth + PostgreSQL + RLS)
+- **Supabase** (Auth + PostgreSQL + RLS + Storage)
+- **Vercel** (deploy + cron jobs)
+- **Chart.js** (gráficos de geração e eficiência)
+
+## Modelo de negócio
+
+| Plano | Mensalidade | Módulos | Limpezas/ano |
+|-------|-------------|---------|--------------|
+| Básico | R$ 30/mês | até 15 | 2 |
+| Padrão | R$ 50/mês | 16–30 | 2 |
+| Plus | R$ 100/mês | 31–60 | 4 |
+| Pro/Business | sob consulta | 61+ | customizado |
+
+- 1ª limpeza com **50% off**
+- Contrato mínimo **12 meses**
+- Limpeza avulsa disponível com **40% off** para assinantes
 
 ## Cores
 
 | Token | Hex | Uso |
-|---|---|---|
-| `brand-dark` | `#1B3A2D` | Header, textos |
-| `brand-green` | `#3DC45A` | CTAs, destaques |
-| `brand-bg` | `#F4F8F2` | Background da página |
+|-------|-----|-----|
+| `dark-green` | `#1B3A2D` | Headers, textos, hero background |
+| `vibrant-green` | `#3DC45A` | CTAs, destaques, accents |
+| `light-green` | `#EBF3E8` | Superfícies suaves, nav |
+| `pale-green` | `#F4F8F2` | Background de página |
+| `border-green` | `#C8DFC0` | Bordas de cards |
+| `muted-green` | `#7A9A84` | Texto secundário |
 
 ## Estrutura de rotas
 
 ```
-/                       → Landing page pública
-/login                  → Autenticação
-/cadastro               → Registro (cliente ou técnico)
+/                         → Landing page pública (modelo atual)
+/v2                       → Nova landing page (em aprovação → será a /)
+/login                    → Autenticação (email/senha + Google OAuth)
+/cadastro                 → Registro em steps (cliente 4 steps / técnico 3 steps)
+/completar-cadastro       → Complemento pós-Google OAuth
 
-/cliente                → Home do cliente (pedidos, stats)
-/cliente/solicitar      → Formulário de nova solicitação
-/cliente/historico      → Histórico de serviços
+/cliente/home             → Dashboard cliente (hero dinâmico 5 estados)
+/cliente/relatorios       → Relatórios mensais + gráficos
+/cliente/historico        → Histórico de serviços + gráficos
+/cliente/avulsa           → Solicitar limpeza avulsa (3 steps)
+/cliente/indicacoes       → Programa de indicações (até 30% desconto)
+/cliente/perfil           → Dados pessoais + usina + assinatura
 
-/tecnico                → Dashboard do técnico
-/tecnico/servicos       → Pedidos disponíveis na região
-/tecnico/agenda         → Serviços agendados
+/tecnico                  → Dashboard técnico (chamados + ganhos)
+/tecnico/chamados         → Chamados disponíveis na região
+/tecnico/chamados/[id]    → Detalhe + aceitar chamado
+/tecnico/agenda           → Agenda de serviços
+/tecnico/ganhos           → Histórico financeiro
+/tecnico/conclusao/[id]   → Concluir serviço + fotos
+/tecnico/perfil           → Perfil do técnico
 
-/admin                  → Painel administrativo
-/admin/usuarios         → Gestão de usuários
-/admin/relatorios       → Métricas da plataforma
+/admin                    → Painel administrativo (métricas + MRR)
+/admin/servicos           → Gestão de serviços
+/admin/servicos/[id]      → Detalhe + designar técnico
+/admin/pagamentos         → Liberação de repasses
+/admin/relatorios         → Métricas da plataforma
+/admin/usuarios           → Aprovação de técnicos
+/admin/mapa               → Mapa de técnicos online
 ```
 
-## Configuração
+## Perfis de usuário
 
-1. Clone o repositório e instale as dependências:
+| Perfil | O que faz |
+|--------|-----------|
+| `cliente` | Assina plano, solicita limpezas, acompanha relatórios |
+| `tecnico` | Aceita chamados, executa limpezas, recebe repasse |
+| `admin` | Gerencia plataforma, aprova técnicos, libera repasses |
+
+## Configuração local
+
+1. Clone o repositório:
    ```bash
+   git clone https://github.com/rafaelmecoccirosa-source/painel-clean-mrr
+   cd painel-clean-mrr
    npm install
    ```
 
-2. Copie o arquivo de variáveis de ambiente:
+2. Configure as variáveis de ambiente:
    ```bash
    cp .env.local.example .env.local
    ```
-
-3. Crie um projeto no [Supabase](https://supabase.com) e preencha `.env.local`:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   ```
-
-4. Execute o schema SQL em **Supabase → SQL Editor**:
-   ```
-   supabase/schema.sql
+   NEXT_PUBLIC_SUPABASE_URL=https://qprnhafgebfjnkadopge.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
+   CRON_SECRET=seu-cron-secret
    ```
 
-5. Inicie o servidor de desenvolvimento:
+3. Inicie o servidor:
    ```bash
    npm run dev
    ```
 
-## Próximos passos (MVP)
+## Usuários demo
 
-- [ ] Integrar autenticação Supabase nos Server Components
-- [ ] Criar fluxo de solicitação com Server Actions
-- [ ] Implementar sistema de orçamentos (técnico → cliente)
-- [ ] Notificações em tempo real com Supabase Realtime
-- [ ] Upload de fotos antes/depois (Supabase Storage)
-- [ ] Avaliações pós-serviço
+**Senha:** `Demo@2026!`
+
+| Email | Perfil |
+|-------|--------|
+| fernanda.alves@demo.painelclean.com.br | Cliente — Padrão |
+| ana.silva@demo.painelclean.com.br | Cliente — Básico |
+| ricardo.mendes@demo.painelclean.com.br | Cliente — Plus |
+| carlos.souza@demo.painelclean.com.br | Técnico — Jaraguá do Sul |
+| admin@painelclean.com.br | Admin |
+
+## Documentação
+
+- **`CLAUDE.md`** — arquitetura completa, schema do banco, fluxos e regras
+- **`TODO.md`** — estado atual e próximos passos
+- **`MOBILE_BRIEFING.md`** — briefing para desenvolvimento do app mobile
+- **`supabase/migrations/`** — todas as migrations aplicadas
+
+## App mobile
+
+Em desenvolvimento paralelo com React Native + Expo.
+Ver `MOBILE_BRIEFING.md` para detalhes de integração.
