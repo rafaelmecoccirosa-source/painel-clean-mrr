@@ -75,7 +75,7 @@
 - [ ] Integração Mercado Pago (PIX + cartão + débito recorrente)
 - [ ] Integração API inversores (Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye)
 - [ ] Geração automática de PDF de relatório com fotos antes/depois
-- [ ] Renomear repos: painel-clean-plataforma → v1, painel-clean-v2 → v2/v3
+- [x] Renomear repo ativo para painel-clean-mrr (feito — painel-clean-mrr.vercel.app)
 
 ---
 
@@ -158,7 +158,7 @@
 - **Técnico aceita direto** — admin pode intervir quando necessário
 - **Auto-scheduling:** cron diário cria service_requests quando next_service_at ≤ hoje+7dias
 - **App mobile:** Beiço desenvolvendo em paralelo — usar anon key (nunca service_role no app)
-- **Repos pós-MVP:** painel-clean-plataforma=v1(uber) · painel-clean-v2=v2/v3(netflix atual)
+- **Repos:** painel-clean-plataforma=v1(uber) · painel-clean-mrr=MRR(netflix atual, produção)
 
 ---
 

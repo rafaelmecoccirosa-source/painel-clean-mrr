@@ -1,12 +1,12 @@
-# CLAUDE.md — Painel Clean Plataforma v2
+# CLAUDE.md — Painel Clean MRR
 
-> ⚠️ **REPO ATIVO DE TRABALHO:** github.com/rafaelmecoccirosa-source/painel-clean-v2
+> ⚠️ **REPO ATIVO DE TRABALHO:** github.com/rafaelmecoccirosa-source/painel-clean-mrr
 > Todas as implementações vão aqui. A v1 (painel-clean-plataforma) é só referência histórica — nunca editar.
 
 > Contexto completo do projeto para o Claude Code.
-> Atualizado em: 2026-04-22
+> Atualizado em: 2026-05-15
 > Leia este arquivo inteiro antes de qualquer implementação.
-> **Esta é a v2 — modelo assinatura (Netflix). A v1 está em github.com/rafaelmecoccirosa-source/painel-clean-plataforma**
+> **Este é o repo MRR — modelo assinatura (Netflix). A v1 está em github.com/rafaelmecoccirosa-source/painel-clean-plataforma**
 
 ---
 
@@ -14,8 +14,8 @@
 
 Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netflix)** com serviço avulso como opção secundária. Conecta **donos de painéis solares** com **técnicos certificados** em um corredor de 13 cidades entre Jaraguá do Sul e Florianópolis (SC).
 
-**App v2:** painel-clean-v2.vercel.app
-**Repo v2:** github.com/rafaelmecoccirosa-source/painel-clean-v2
+**App (produção):** painel-clean-mrr.vercel.app
+**Repo:** github.com/rafaelmecoccirosa-source/painel-clean-mrr
 **App v1 (referência):** painel-clean-plataforma.vercel.app
 
 ---
