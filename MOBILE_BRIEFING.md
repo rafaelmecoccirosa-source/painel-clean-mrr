@@ -17,8 +17,8 @@ O app mobile é o **frontend mobile do cliente** — a mesma experiência do das
 
 | Recurso | Link |
 |---------|------|
-| Repo web (referência) | github.com/rafaelmecoccirosa-source/painel-clean-v2 |
-| App web (produção) | painel-clean-v2.vercel.app |
+| Repo web (referência) | github.com/rafaelmecoccirosa-source/painel-clean-mrr |
+| App web (produção) | painel-clean-mrr.vercel.app |
 | Supabase URL | https://qprnhafgebfjnkadopge.supabase.co |
 | Anon key | pegar no Supabase → Settings → API → anon public |
 
@@ -262,6 +262,6 @@ Para as demais operações, usar o Supabase SDK diretamente com a anon key.
 ## Referências visuais
 
 O app web já tem o design implementado. Ver em:
-- `painel-clean-v2.vercel.app/cliente/home` (login com Fernanda)
+- `painel-clean-mrr.vercel.app/cliente/home` (login com Fernanda)
 - Componentes em `components/cliente/` no repo
 - Design tokens em `CLAUDE.md` no repo
