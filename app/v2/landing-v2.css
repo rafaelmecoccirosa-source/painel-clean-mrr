@@ -45,7 +45,7 @@
   color: #1B3A2D;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 .landing-v2-root ::selection {
   background: #3DC45A;
