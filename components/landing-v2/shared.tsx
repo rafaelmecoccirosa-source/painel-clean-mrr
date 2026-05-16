@@ -55,7 +55,7 @@ export function Button({
     cursor: 'pointer',
     fontFamily: "'Open Sans',sans-serif",
     fontWeight: 600,
-    transition: 'all .15s ease',
+    transition: 'transform 150ms cubic-bezier(0.23,1,0.32,1), background 150ms ease, box-shadow 150ms ease',
     whiteSpace: 'nowrap',
     width: fullWidth ? '100%' : undefined,
     transform: press ? 'scale(0.98)' : hover ? 'translateY(-1px)' : 'none',

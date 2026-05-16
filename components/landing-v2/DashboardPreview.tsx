@@ -100,7 +100,7 @@ export default function DashboardPreview() {
                     display: 'flex',
                     gap: 14,
                     alignItems: 'flex-start',
-                    animation: `pc-slideup .5s ${i * 0.08}s ease both`,
+                    animation: `pc-fadein-up .5s ${i * 0.08}s ease both`,
                   }}
                 >
                   <div
@@ -168,7 +168,7 @@ export default function DashboardPreview() {
                 overflow: 'hidden',
                 maxWidth: isMobile ? '100%' : 500,
                 margin: isMobile ? '0' : '0 auto',
-                animation: 'pc-slideup .7s ease both',
+                animation: 'pc-fadein-up .7s ease both',
                 border: `1px solid ${COLORS.border}`,
               }}
             >
@@ -381,22 +381,25 @@ export default function DashboardPreview() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 72 }}>
                     {bars.map((v, i) => {
-                      const h = (v / maxBar) * 100;
+                      const h = (v / maxBar);
                       const isPeak = i >= 4 && i <= 7;
                       return (
-                        <div
-                          key={i}
-                          style={{
-                            flex: 1,
-                            height: `${h}%`,
-                            background: isPeak
-                              ? `linear-gradient(180deg, ${COLORS.green}, #6EE7A0)`
-                              : 'rgba(61,196,90,0.35)',
-                            borderRadius: '3px 3px 0 0',
-                            transition: 'height .6s cubic-bezier(.4,0,.2,1)',
-                            boxShadow: isPeak ? '0 2px 6px rgba(61,196,90,0.35)' : 'none',
-                          }}
-                        />
+                        <div key={i} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              transformOrigin: 'bottom',
+                              transform: `scaleY(${h})`,
+                              transition: 'transform .6s cubic-bezier(0.23,1,0.32,1)',
+                              background: isPeak
+                                ? `linear-gradient(180deg, ${COLORS.green}, #6EE7A0)`
+                                : 'rgba(61,196,90,0.35)',
+                              borderRadius: '3px 3px 0 0',
+                              boxShadow: isPeak ? '0 2px 6px rgba(61,196,90,0.35)' : 'none',
+                            }}
+                          />
+                        </div>
                       );
                     })}
                   </div>

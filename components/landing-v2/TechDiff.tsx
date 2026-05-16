@@ -82,7 +82,7 @@ export default function TechDiff() {
                   fontSize: isMobile ? 17 : 22,
                   color: 'rgba(255,255,255,0.82)',
                   letterSpacing: '.01em',
-                  transition: 'all .2s',
+                  transition: 'color 200ms ease, background 200ms ease',
                   padding: '8px 14px',
                   borderRadius: 10,
                 }}
@@ -128,7 +128,7 @@ export default function TechDiff() {
                 border: '1px solid rgba(61,196,90,0.22)',
                 borderRadius: 16,
                 padding: isMobile ? 22 : 28,
-                transition: 'all .25s ease',
+                transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                 animation: `pc-slideup .6s ${i * 0.1}s ease both`,
               }}
               onMouseEnter={(e) => {

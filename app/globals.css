@@ -298,6 +298,19 @@
   }
 }
 
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .fade-up-1,
+  .fade-up-2,
+  .fade-up-3,
+  .fade-up-4,
+  .fade-up-5 {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* Hamburger drawer for the cliente header. */
 .pc-drawer-overlay {
   position: fixed;

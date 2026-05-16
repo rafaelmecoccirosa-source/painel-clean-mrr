@@ -101,7 +101,7 @@ export default function Plans() {
                   display: 'flex',
                   flexDirection: 'column',
                   boxShadow: dark ? '0 16px 40px rgba(27,58,45,0.3)' : '0 2px 14px rgba(27,58,45,0.05)',
-                  transition: 'all .25s',
+                  transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                   animation: `pc-slideup .5s ${i * 0.08}s ease both`,
                   overflow: 'hidden',
                 }}
