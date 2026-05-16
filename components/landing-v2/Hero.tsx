@@ -364,7 +364,7 @@ export default function Hero() {
                   textShadow: '0 1px 6px rgba(0,0,0,0.6)',
                 }}
               >
-                ⬤ Técnico Painel Clean · Usina em Jaraguá do Sul
+                ⬤ Técnico CleanPass · Usina em Jaraguá do Sul
               </div>
             </div>
 

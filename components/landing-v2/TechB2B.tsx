@@ -33,7 +33,7 @@ export default function TechB2B() {
     },
     {
       icon: '🛠',
-      title: 'Ecossistema Painel Clean',
+      title: 'Ecossistema CleanPass',
       body: 'App com checklist, captura de fotos, assinatura digital e suporte. Você foca no serviço.',
     },
   ];

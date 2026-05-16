@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type ButtonHTMLAttributes, type RefObject } from 'react';
 import { COLORS } from '@/lib/brand-tokens';
+import CleanPassLogo from '@/components/ui/CleanPassLogo';
 
 export { COLORS };
 
@@ -388,45 +389,14 @@ export function LogoLockup({
   inverted?: boolean;
   showTagline?: boolean;
 }) {
-  const mark = inverted ? LOGO_WHITE : LOGO_DARK;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={mark}
-        alt="Painel Clean"
-        style={{ width: 44, height: 44, objectFit: 'contain', display: 'block' }}
+    <div>
+      <CleanPassLogo
+        variant={inverted ? 'dark' : 'light'}
+        size={40}
+        showWordmark={true}
+        showTagline={showTagline}
       />
-      <div style={{ lineHeight: 1 }}>
-        <div
-          style={{
-            fontFamily: "'Montserrat',sans-serif",
-            fontWeight: 800,
-            fontSize: 20,
-            color: inverted ? 'white' : COLORS.dark,
-            letterSpacing: '-.015em',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Painel Clean
-        </div>
-        {showTagline && (
-          <div
-            style={{
-              fontFamily: "'Open Sans',sans-serif",
-              fontWeight: 600,
-              fontSize: 10.5,
-              color: inverted ? 'rgba(255,255,255,0.7)' : COLORS.muted,
-              letterSpacing: '.06em',
-              textTransform: 'uppercase',
-              marginTop: 4,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Limpeza e Cuidado para Usinas Solares
-          </div>
-        )}
-      </div>
     </div>
   );
 }
