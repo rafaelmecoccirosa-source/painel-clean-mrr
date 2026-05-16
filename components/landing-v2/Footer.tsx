@@ -22,7 +22,7 @@ export default function Footer() {
     {
       title: 'Empresa',
       links: [
-        { label: 'Sobre a Painel Clean', href: '#' },
+        { label: 'Sobre a CleanPass', href: '#' },
         { label: 'Para técnicos', href: '#para-tecnicos' },
         { label: 'Parcerias', href: '#' },
         { label: 'Imprensa', href: '#' },
@@ -237,7 +237,7 @@ export default function Footer() {
               textAlign: isMobile ? 'left' : 'right',
             }}
           >
-            © 2026 Painel Clean · Feito em Santa Catarina 🇧🇷
+            © 2026 CleanPass · Feito em Santa Catarina 🇧🇷
             <br />
             <span style={{ opacity: 0.8 }}>Em conformidade com a LGPD (Lei nº 13.709/2018)</span>
           </div>

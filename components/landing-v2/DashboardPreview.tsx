@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { COLORS, Counter, Eyebrow, LOGO_MARK, useIsMobile } from './shared';
+import { COLORS, Counter, Eyebrow, useIsMobile } from './shared';
+import CleanPassLogo from '@/components/ui/CleanPassLogo';
 
 export default function DashboardPreview() {
   const isMobile = useIsMobile(900);
@@ -231,12 +232,7 @@ export default function DashboardPreview() {
                       boxShadow: '0 2px 8px rgba(61,196,90,0.3)',
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={LOGO_MARK}
-                      alt="Painel Clean"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
+                    <CleanPassLogo variant="light" size={24} showWordmark={false} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div

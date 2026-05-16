@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './landing-v2.css';
 
 export const metadata: Metadata = {
-  title: 'Painel Clean — Sua usina solar no máximo, o ano inteiro',
+  title: 'CleanPass — Sua usina solar no máximo, o ano inteiro',
   description:
     'Plataforma de assinatura mensal de limpeza e monitoramento de painéis solares em Santa Catarina.',
 };

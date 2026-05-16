@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "PainelClean — Limpeza de Placas Solares",
-    template: "%s | PainelClean",
+    default: "CleanPass — Limpeza de Placas Solares",
+    template: "%s | CleanPass",
   },
   description:
     "Marketplace especializado em limpeza profissional de placas solares. Conectamos clientes a técnicos certificados para maximizar a eficiência do seu sistema fotovoltaico.",
