@@ -12,7 +12,7 @@ export default function Header() {
   useEffect(() => {
     const update = () => {
       const y = window.scrollY;
-      setScrolled(y > 60);
+      setScrolled(y > 10);
       const docH = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(docH > 0 ? Math.min(100, (y / docH) * 100) : 0);
     };
@@ -35,36 +35,20 @@ export default function Header() {
   ];
 
   return (
-    <div
+    <header
       style={{
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        padding: scrolled ? (isMobile ? '8px 12px' : '10px 24px') : '0',
-        transition: 'padding .35s cubic-bezier(.4,0,.2,1)',
-        pointerEvents: 'none',
+        background: scrolled ? 'rgba(244,248,242,0.88)' : COLORS.bg,
+        backdropFilter: scrolled ? 'saturate(180%) blur(16px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(16px)' : 'none',
+        borderBottom: scrolled ? `1px solid ${COLORS.border}` : '1px solid transparent',
+        transition: 'background .25s ease, border-color .25s ease, backdrop-filter .25s ease',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <header
-        style={{
-          pointerEvents: 'auto',
-          borderRadius: scrolled ? 16 : 0,
-          background: scrolled
-            ? 'rgba(244,248,242,0.96)'
-            : COLORS.bg,
-          backdropFilter: scrolled ? 'saturate(160%) blur(14px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'saturate(160%) blur(14px)' : 'none',
-          border: scrolled
-            ? `1px solid ${COLORS.border}`
-            : '1px solid transparent',
-          boxShadow: scrolled
-            ? '0 4px 28px rgba(27,58,45,0.13), 0 1px 4px rgba(27,58,45,0.06)'
-            : 'none',
-          transition: 'border-radius .35s cubic-bezier(.4,0,.2,1), background .25s ease, box-shadow .35s ease, border-color .25s ease',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
         {/* Barra de progresso de leitura */}
         <div
           style={{
@@ -179,8 +163,7 @@ export default function Header() {
             </a>
           </div>
         )}
-      </header>
-    </div>
+    </header>
   );
 }
 
