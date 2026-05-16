@@ -141,7 +141,7 @@ export default function Footer() {
                     placeItems: 'center',
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
-                    transition: 'all .2s',
+                    transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1)',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = COLORS.green;
@@ -189,7 +189,7 @@ export default function Footer() {
                         textDecoration: 'none',
                         fontFamily: "'Open Sans',sans-serif",
                         fontSize: 14,
-                        transition: 'color .15s',
+                        transition: 'color 150ms ease',
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = COLORS.green)}
                       onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.65)')}

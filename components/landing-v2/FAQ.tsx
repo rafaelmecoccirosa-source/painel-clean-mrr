@@ -111,34 +111,37 @@ export default function FAQ() {
                       placeItems: 'center',
                       fontSize: 20,
                       fontWeight: 700,
-                      transition: 'all .2s',
+                      transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1), background 150ms ease, color 150ms ease',
                       transform: isOpen ? 'rotate(45deg)' : 'none',
                     }}
                   >
                     +
                   </span>
                 </button>
-                {isOpen && (
-                  <div
-                    style={{
-                      padding: isMobile ? '0 20px 20px' : '0 26px 24px',
-                      animation: 'pc-fade .2s ease',
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontFamily: "'Open Sans',sans-serif",
-                        fontSize: isMobile ? 14 : 15,
-                        lineHeight: 1.65,
-                        color: 'rgba(27,58,45,0.72)',
-                        textWrap: 'pretty',
-                      }}
-                    >
-                      {f.a}
-                    </p>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: isOpen ? '1fr' : '0fr',
+                    transition: 'grid-template-rows 250ms cubic-bezier(0.23,1,0.32,1)',
+                  }}
+                >
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ padding: isMobile ? '0 20px 20px' : '0 26px 24px' }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontFamily: "'Open Sans',sans-serif",
+                          fontSize: isMobile ? 14 : 15,
+                          lineHeight: 1.65,
+                          color: 'rgba(27,58,45,0.72)',
+                          textWrap: 'pretty',
+                        }}
+                      >
+                        {f.a}
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

@@ -199,7 +199,7 @@ export default function Calculator() {
                         fontWeight: 700,
                         cursor: 'pointer',
                         boxShadow: active ? '0 2px 8px rgba(61,196,90,0.35)' : 'none',
-                        transition: 'all .18s ease',
+                        transition: 'transform 180ms cubic-bezier(0.23,1,0.32,1), background 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
                       }}
                     >
                       {opt.l}
@@ -231,7 +231,7 @@ export default function Calculator() {
                         border: sel ? `2px solid ${COLORS.dark}` : `1.5px solid ${COLORS.border}`,
                         background: sel ? COLORS.dark : 'white',
                         color: sel ? 'white' : COLORS.dark,
-                        transition: 'all .18s',
+                        transition: 'transform 180ms cubic-bezier(0.23,1,0.32,1), background 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
                         position: 'relative',
                       }}
                     >

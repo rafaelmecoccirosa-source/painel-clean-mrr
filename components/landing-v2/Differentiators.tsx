@@ -131,7 +131,7 @@ export default function Differentiators() {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 16,
                 padding: isMobile ? 22 : 28,
-                transition: 'all .25s ease',
+                transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                 boxShadow: '0 2px 12px rgba(27,58,45,0.05)',
                 animation: `pc-slideup .5s ${i * 0.06}s ease both`,
               }}

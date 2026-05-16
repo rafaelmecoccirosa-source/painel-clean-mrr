@@ -257,7 +257,7 @@ export default function Coverage() {
                       strokeLinejoin="round"
                       style={{
                         cursor: isFeatured ? 'pointer' : 'default',
-                        transition: 'fill .15s, stroke-width .15s',
+                        transition: 'fill 150ms ease, stroke-width 150ms ease',
                         filter: isHover ? 'brightness(1.08)' : undefined,
                       }}
                       onMouseEnter={isFeatured ? () => setHover(m.name) : undefined}
@@ -570,7 +570,7 @@ export default function Coverage() {
                         borderRadius: 8,
                         border: `1px solid ${hover === name ? COLORS.green : COLORS.border}`,
                         cursor: 'pointer',
-                        transition: 'all .15s',
+                        transition: 'background 150ms ease, border-color 150ms ease',
                       }}
                     >
                       {name}
