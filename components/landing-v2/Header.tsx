@@ -46,7 +46,6 @@ export default function Header() {
         borderBottom: scrolled ? `1px solid ${COLORS.border}` : '1px solid transparent',
         transition: 'background .25s ease, border-color .25s ease, backdrop-filter .25s ease',
         overflow: 'hidden',
-        position: 'relative',
       }}
     >
         {/* Barra de progresso de leitura */}
