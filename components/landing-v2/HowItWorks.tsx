@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { COLORS, SectionHeadline, useIsMobile } from './shared';
+import { COLORS, HERO_PHOTO, SectionHeadline, useIsMobile } from './shared';
 
 type Step = { n: string; title: string; body: string; icon: ReactNode };
 
@@ -71,15 +71,28 @@ export default function HowItWorks() {
     <section
       id="como-funciona"
       style={{
-        background: COLORS.bg,
+        position: 'relative',
+        backgroundImage: `url('${HERO_PHOTO}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         padding: isMobile ? '56px 20px' : '88px 32px',
       }}
     >
-      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+      {/* dark overlay so text and cards remain readable */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(15,56,43,0.70)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto' }}>
         <SectionHeadline
           eyebrow="✨ PROCESSO SIMPLES"
           title="Do cadastro ao relatório, em 4 passos"
           subtitle="Você não precisa entender de painel solar. A gente entende — e mantém tudo funcionando como o primeiro dia."
+          dark
         />
 
         <div

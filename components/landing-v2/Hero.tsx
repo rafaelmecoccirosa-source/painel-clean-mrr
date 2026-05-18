@@ -1,113 +1,378 @@
 'use client';
 
-import { Button, COLORS, HERO_PHOTO, Particles, useIsMobile } from './shared';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { Button, COLORS, useIsMobile } from './shared';
+
+// ---------- helpers ----------
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function lerpRGB(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): string {
+  return `rgb(${Math.round(lerp(a[0], b[0], t))},${Math.round(lerp(a[1], b[1], t))},${Math.round(lerp(a[2], b[2], t))})`;
+}
+
+// module face colors (dark → lit → bright)
+const C_DARK_TOP: [number, number, number]   = [26,  77,  56]; // #1a4d38
+const C_DARK_LEFT: [number, number, number]  = [13,  46,  32]; // #0d2e20
+const C_DARK_RIGHT: [number, number, number] = [18,  42,  28]; // #122a1c
+const C_LIT_TOP: [number, number, number]    = [61,  196, 90]; // #3DC45A
+const C_LIT_LEFT: [number, number, number]   = [42,  148, 68]; // #2a9444
+const C_LIT_RIGHT: [number, number, number]  = [31,  122, 53]; // #1f7a35
+const C_PEAK_TOP: [number, number, number]   = [127, 232, 154]; // #7FE89A
+const C_PEAK_LEFT: [number, number, number]  = [61,  196, 90]; // #3DC45A
+const C_PEAK_RIGHT: [number, number, number] = [42,  148, 68]; // #2a9444
+
+function drawModule(
+  ctx: CanvasRenderingContext2D,
+  sx: number,
+  sy: number,
+  brightness: number,
+  tileW: number,
+  tileH: number,
+) {
+  const cubeH = lerp(6, 20, brightness);
+  const hw = tileW / 2;
+  const hh = tileH / 2;
+
+  let topC: string, leftC: string, rightC: string;
+  if (brightness < 0.5) {
+    const t = brightness * 2;
+    topC   = lerpRGB(C_DARK_TOP,   C_LIT_TOP,   t);
+    leftC  = lerpRGB(C_DARK_LEFT,  C_LIT_LEFT,  t);
+    rightC = lerpRGB(C_DARK_RIGHT, C_LIT_RIGHT, t);
+  } else {
+    const t = (brightness - 0.5) * 2;
+    topC   = lerpRGB(C_LIT_TOP,   C_PEAK_TOP,   t);
+    leftC  = lerpRGB(C_LIT_LEFT,  C_PEAK_LEFT,  t);
+    rightC = lerpRGB(C_LIT_RIGHT, C_PEAK_RIGHT, t);
+  }
+
+  // right face
+  ctx.beginPath();
+  ctx.moveTo(sx,      sy + tileH - cubeH);
+  ctx.lineTo(sx + hw, sy + hh   - cubeH);
+  ctx.lineTo(sx + hw, sy + hh          );
+  ctx.lineTo(sx,      sy + tileH       );
+  ctx.closePath();
+  ctx.fillStyle = rightC;
+  ctx.fill();
+
+  // left face
+  ctx.beginPath();
+  ctx.moveTo(sx - hw, sy + hh   - cubeH);
+  ctx.lineTo(sx,      sy + tileH - cubeH);
+  ctx.lineTo(sx,      sy + tileH        );
+  ctx.lineTo(sx - hw, sy + hh           );
+  ctx.closePath();
+  ctx.fillStyle = leftC;
+  ctx.fill();
+
+  // top face
+  ctx.beginPath();
+  ctx.moveTo(sx,      sy         - cubeH);
+  ctx.lineTo(sx + hw, sy + hh    - cubeH);
+  ctx.lineTo(sx,      sy + tileH - cubeH);
+  ctx.lineTo(sx - hw, sy + hh    - cubeH);
+  ctx.closePath();
+  ctx.fillStyle = topC;
+  ctx.fill();
+}
+
+// ---------- IsometricGrid ----------
+
+function IsometricGrid({ style }: { style?: CSSProperties }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const COLS = 14;
+    const ROWS = 10;
+    const WAVE_SPEED = 0.008;
+    const MAX_DIAG = COLS + ROWS - 2; // 22
+    const CYCLE = MAX_DIAG + 10;      // 32 — gap before wave repeats
+    const LERP_F = 0.12;
+    const MAX_CUBE_H = 20;
+
+    const bright: number[][] = Array.from({ length: ROWS }, () =>
+      new Array<number>(COLS).fill(0),
+    );
+    let wavePos = 0;
+    let animId = 0;
+
+    const resize = () => {
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const loop = () => {
+      const cw = canvas.width;
+      const ch = canvas.height;
+
+      // tile size: fill canvas width, cap at 48px
+      const tileW = Math.min(48, Math.floor(cw / (COLS + 2)));
+      const tileH = tileW / 2;
+      const hw = tileW / 2;
+      const hh = tileH / 2;
+
+      // grid vertical span: from top of (0,0) cube to bottom of last tile
+      const gridSpan = (COLS + ROWS - 1) * hh + tileH + MAX_CUBE_H;
+      const offsetX = cw / 2;
+      const offsetY = (ch - gridSpan) / 2 + MAX_CUBE_H;
+
+      // advance wave
+      wavePos = (wavePos + WAVE_SPEED) % CYCLE;
+
+      // update brightness per tile
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const diagIdx = col + row;
+          const d = (wavePos - diagIdx + CYCLE) % CYCLE;
+          let target = 0;
+          if (d < 1)       target = d;              // ramp up
+          else if (d < 3)  target = 1;              // peak
+          else if (d < 8)  target = 1 - (d - 3) / 5; // fade out
+          bright[row][col] += (target - bright[row][col]) * LERP_F;
+        }
+      }
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      // painter's algorithm: draw diagonals back-to-front (low diag index = back)
+      for (let diag = 0; diag < COLS + ROWS - 1; diag++) {
+        const colMin = Math.max(0, diag - ROWS + 1);
+        const colMax = Math.min(diag, COLS - 1);
+        for (let col = colMin; col <= colMax; col++) {
+          const row = diag - col;
+          const sx = offsetX + (col - row) * hw;
+          const sy = offsetY + (col + row) * hh;
+          drawModule(ctx, sx, sy, bright[row][col], tileW, tileH);
+        }
+      }
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    loop();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        display: 'block',
+        ...style,
+      }}
+    />
+  );
+}
+
+// ---------- floating cards ----------
+
+function CardGeneration() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        background: 'white',
+        borderRadius: 12,
+        padding: '12px 16px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.20)',
+        minWidth: 158,
+        animation: 'pc-fadein-up .6s .8s ease both',
+        animationFillMode: 'both',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          fontFamily: "'Open Sans',sans-serif",
+          fontSize: 10.5,
+          fontWeight: 800,
+          color: '#1B3A2D',
+          letterSpacing: '.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <span style={{ color: COLORS.green }}>⚡</span> Geração hoje
+      </div>
+      <div
+        style={{
+          fontFamily: "'Montserrat',sans-serif",
+          fontWeight: 800,
+          fontSize: 20,
+          color: COLORS.green,
+          margin: '4px 0 2px',
+          letterSpacing: '-.02em',
+        }}
+      >
+        38,2 kWh
+      </div>
+      <div
+        style={{
+          fontFamily: "'Open Sans',sans-serif",
+          fontSize: 12,
+          color: '#2DAF4A',
+          fontWeight: 600,
+        }}
+      >
+        ↑ 18,4% vs média
+      </div>
+    </div>
+  );
+}
+
+function CardNextCleaning() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        background: '#1B3A2D',
+        borderRadius: 12,
+        padding: '12px 16px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.30)',
+        minWidth: 178,
+        animation: 'pc-fadein-up .6s 1s ease both',
+        animationFillMode: 'both',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'Open Sans',sans-serif",
+          fontSize: 10.5,
+          fontWeight: 800,
+          color: 'white',
+          letterSpacing: '.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        🧹 Próxima limpeza
+      </div>
+      <div
+        style={{
+          fontFamily: "'Montserrat',sans-serif",
+          fontWeight: 800,
+          fontSize: 16,
+          color: COLORS.green,
+          margin: '4px 0 2px',
+          letterSpacing: '-.01em',
+        }}
+      >
+        23 abr · 14h
+      </div>
+      <div
+        style={{
+          fontFamily: "'Open Sans',sans-serif",
+          fontSize: 12,
+          color: '#7A9A84',
+          fontWeight: 500,
+        }}
+      >
+        Técnico: Ricardo M.
+      </div>
+    </div>
+  );
+}
+
+// ---------- main Hero ----------
 
 export default function Hero() {
-  const isMobile = useIsMobile(900);
+  const isMobile = useIsMobile(640);
 
-  const heroBg = `
-    radial-gradient(ellipse at 30% 40%, rgba(61,196,90,0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 60%, rgba(27,58,45,0.85) 0%, rgba(15,36,25,1) 60%),
-    linear-gradient(135deg, #0F2419 0%, #1B3A2D 50%, #142C22 100%)
-  `;
+  const trustItems = [
+    '✓ Equipamentos próprios',
+    '✓ Monitoramento 24/7',
+    '✓ Relatório mensal',
+    '✓ Seguro incluso',
+  ] as const;
+
+  const animPanel = (
+    <div
+      style={{
+        position: 'relative',
+        height: isMobile ? 280 : 480,
+        borderRadius: 16,
+        overflow: 'hidden',
+        background: '#0F382B',
+        flexShrink: 0,
+        animation: 'pc-fadein-up 1s .3s ease both',
+        animationFillMode: 'both',
+      }}
+    >
+      <IsometricGrid />
+      {!isMobile && <CardGeneration />}
+      {!isMobile && <CardNextCleaning />}
+    </div>
+  );
 
   return (
     <section
       id="top"
       style={{
         position: 'relative',
-        minHeight: isMobile ? 'auto' : 640,
-        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #1B3A2D 0%, #0E251C 100%)',
         color: 'white',
+        overflow: 'hidden',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: heroBg,
-          animation: 'pc-kenburns 20s ease-in-out infinite alternate',
-        }}
-      />
-
-      <svg
-        viewBox="0 0 1600 900"
-        preserveAspectRatio="xMidYMid slice"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          opacity: 0.22,
-          mixBlendMode: 'screen',
-        }}
-      >
-        <defs>
-          <pattern
-            id="panel-grid-v3"
-            x="0"
-            y="0"
-            width="80"
-            height="50"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(-8)"
-          >
-            <rect x="2" y="2" width="76" height="46" fill="none" stroke="#3DC45A" strokeWidth="0.6" />
-            <line x1="40" y1="2" x2="40" y2="48" stroke="#3DC45A" strokeWidth="0.3" />
-            <line x1="2" y1="25" x2="78" y2="25" stroke="#3DC45A" strokeWidth="0.3" />
-          </pattern>
-        </defs>
-        <rect x="-200" y="400" width="2000" height="700" fill="url(#panel-grid-v3)" transform="skewY(8)" />
-      </svg>
-
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'linear-gradient(90deg, rgba(15,36,25,0.85) 0%, rgba(15,36,25,0.55) 55%, rgba(15,36,25,0.35) 100%)',
-        }}
-      />
-
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: -100,
-            left: '-40%',
-            width: '60%',
-            height: '140%',
-            background:
-              'linear-gradient(100deg, transparent 0%, rgba(61,196,90,0) 35%, rgba(61,196,90,0.12) 50%, rgba(255,255,255,0.08) 52%, rgba(61,196,90,0) 65%, transparent 100%)',
-            transform: 'skewX(-18deg)',
-            animation: 'pc-shimmer 7s ease-in-out infinite',
-          }}
-        />
-      </div>
-
-      <Particles count={18} color="rgba(61,196,90,0.35)" />
-
       <div
         style={{
           position: 'relative',
           zIndex: 2,
           maxWidth: 1280,
           margin: '0 auto',
-          padding: isMobile ? '56px 20px 80px' : '104px 32px 120px',
+          padding: isMobile ? '0 0 48px' : '80px 32px 100px',
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '1fr 0.8fr',
-          gap: 48,
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? 0 : 48,
           alignItems: 'center',
         }}
       >
-        <div style={{ animation: 'pc-fadein-up .7s ease both' }}>
+        {/* mobile: animation above text */}
+        {isMobile && animPanel}
+
+        {/* left column: content */}
+        <div
+          style={{
+            padding: isMobile ? '32px 20px 0' : '0',
+            textAlign: isMobile ? 'center' : 'left',
+            animation: 'pc-fadein-up .7s ease both',
+          }}
+        >
+          {/* badges */}
           <div
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               gap: 10,
               marginBottom: 24,
-              animation: 'pc-fadein-up .6s ease both',
+              justifyContent: isMobile ? 'center' : 'flex-start',
             }}
           >
             <span
@@ -123,7 +388,6 @@ export default function Hero() {
                 fontFamily: "'Open Sans',sans-serif",
                 fontSize: 12.5,
                 fontWeight: 700,
-                letterSpacing: '.02em',
               }}
             >
               <span
@@ -132,10 +396,11 @@ export default function Hero() {
                   height: 7,
                   borderRadius: '50%',
                   background: '#3DC45A',
+                  flexShrink: 0,
                   animation: 'pc-pulse 2s ease-in-out infinite',
                 }}
               />
-              1ª limpeza com 50% off
+              ⚡ Próxima visita em 48h
             </span>
             <span
               style={{
@@ -152,22 +417,19 @@ export default function Hero() {
                 fontWeight: 600,
               }}
             >
-              <svg width="18" height="13" viewBox="0 0 20 14" style={{ flexShrink: 0, borderRadius: 1.5 }}>
-                <rect width="20" height="14" fill="#009B3A" />
-                <path d="M 10 2 L 18 7 L 10 12 L 2 7 Z" fill="#FEDF00" />
-                <circle cx="10" cy="7" r="2.6" fill="#002776" />
-                <path d="M 7.8 7.4 Q 10 6.2 12.2 7.4" stroke="white" strokeWidth="0.35" fill="none" />
-              </svg>
-              Feito em Santa Catarina
+              ✓ Técnico certificado
             </span>
           </div>
 
+          {/* title */}
           <h1
             style={{
               fontFamily: "'Montserrat',sans-serif",
               fontWeight: 900,
-              fontSize: isMobile ? 'clamp(36px, 9vw, 48px)' : 'clamp(48px, 5.2vw, 68px)',
-              lineHeight: 1.02,
+              fontSize: isMobile
+                ? 'clamp(34px, 9vw, 46px)'
+                : 'clamp(40px, 4.2vw, 58px)',
+              lineHeight: 1.05,
               letterSpacing: '-.03em',
               color: 'white',
               margin: 0,
@@ -188,49 +450,48 @@ export default function Hero() {
             </span>
           </h1>
 
+          {/* subtitle */}
           <p
             style={{
               fontFamily: "'Open Sans',sans-serif",
-              fontSize: isMobile ? 17 : 20,
+              fontSize: isMobile ? 16 : 18,
               lineHeight: 1.55,
               color: 'rgba(255,255,255,0.82)',
-              margin: '24px 0 0',
-              maxWidth: 560,
+              margin: '22px auto 0',
+              maxWidth: 520,
+              marginLeft: isMobile ? 'auto' : 0,
+              marginRight: isMobile ? 'auto' : 0,
               textWrap: 'pretty',
             }}
           >
             Painéis sujos podem perder até{' '}
-            <strong
-              style={{
-                color: '#FBBF24',
-                fontWeight: 800,
-                animation: 'pc-pulse-text 2.5s ease-in-out infinite',
-              }}
-            >
+            <strong style={{ color: '#FBBF24', fontWeight: 800 }}>
               30% de eficiência
             </strong>
             . Mantenha sua geração no máximo com assinatura mensal a partir de R$ 30.
           </p>
 
+          {/* CTAs */}
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: 14,
-              marginTop: 36,
-              alignItems: 'center',
+              marginTop: 32,
+              alignItems: isMobile ? 'stretch' : 'center',
               animation: 'pc-fadein-up .8s .2s ease both',
-              opacity: 0,
               animationFillMode: 'both',
             }}
           >
             <Button
               variant="primary"
               size="xl"
-              onClick={() => { window.location.href = '/cadastro'; }}
+              onClick={() => {
+                window.location.href = '/cadastro';
+              }}
               style={{
-                fontSize: isMobile ? 16 : 18,
-                padding: isMobile ? '16px 30px' : '18px 38px',
+                fontSize: isMobile ? 16 : 17,
+                padding: isMobile ? '16px 30px' : '16px 34px',
                 boxShadow: '0 12px 32px rgba(61,196,90,0.45)',
               }}
             >
@@ -241,298 +502,32 @@ export default function Hero() {
             </Button>
           </div>
 
+          {/* trust items */}
           <div
             style={{
-              marginTop: 36,
+              marginTop: 32,
               display: 'flex',
               flexWrap: 'wrap',
-              gap: isMobile ? '10px 14px' : '12px 22px',
+              gap: '10px 20px',
+              justifyContent: isMobile ? 'center' : 'flex-start',
               fontFamily: "'Open Sans',sans-serif",
               fontSize: 13,
-              color: 'rgba(255,255,255,0.78)',
+              color: 'rgba(255,255,255,0.75)',
               fontWeight: 600,
               animation: 'pc-fadein-up .9s .35s ease both',
-              opacity: 0,
               animationFillMode: 'both',
             }}
           >
-            {(
-              [
-                [
-                  <svg
-                    key="b"
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#6EE7A0"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M 3 18 L 11 18 L 13 8 L 5 8 Z" fill="rgba(110,231,160,0.15)" />
-                    <line x1="5" y1="13" x2="12" y2="13" />
-                    <line x1="8.5" y1="8" x2="7" y2="18" />
-                    <rect x="15" y="3" width="5.5" height="2.5" rx="0.5" fill="#6EE7A0" stroke="none" />
-                    <line x1="15.5" y1="5.5" x2="15.5" y2="7.5" />
-                    <line x1="17" y1="5.5" x2="17" y2="7.5" />
-                    <line x1="18.5" y1="5.5" x2="18.5" y2="7.5" />
-                    <line x1="20" y1="5.5" x2="20" y2="7.5" />
-                    <circle cx="16" cy="11" r="0.9" fill="#6EE7A0" stroke="none" />
-                    <circle cx="19" cy="13" r="0.7" fill="#6EE7A0" stroke="none" opacity="0.7" />
-                    <circle cx="17" cy="15" r="0.6" fill="#6EE7A0" stroke="none" opacity="0.5" />
-                  </svg>,
-                  '2 limpezas/ano',
-                ],
-                ['⚡', 'Relatório mensal'],
-                ['✅', 'Checkup técnico'],
-                ['🛡️', 'Seguro na limpeza'],
-              ] as const
-            ).map(([ico, t]) => (
-              <span
-                key={t}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  flexBasis: isMobile ? 'calc(50% - 7px)' : 'auto',
-                }}
-              >
-                <span
-                  style={{
-                    color: '#6EE7A0',
-                    fontSize: 14,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  {ico}
-                </span>
-                <span style={{ whiteSpace: 'nowrap' }}>{t}</span>
+            {trustItems.map((item) => (
+              <span key={item} style={{ whiteSpace: 'nowrap' }}>
+                {item}
               </span>
             ))}
           </div>
         </div>
 
-        {!isMobile && (
-          <div
-            style={{
-              position: 'relative',
-              animation: 'pc-fadein-up 1s .3s ease both',
-              opacity: 0,
-              animationFillMode: 'both',
-            }}
-          >
-            <div
-              style={{
-                position: 'relative',
-                borderRadius: 20,
-                overflow: 'hidden',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(61,196,90,0.2)',
-                aspectRatio: '4 / 5',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundImage: `url('${HERO_PHOTO}')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: '30% center',
-                  backgroundRepeat: 'no-repeat',
-                  animation: 'pc-kenburns 20s ease-in-out infinite alternate',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(15,36,25,0.6) 100%)',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 16,
-                  left: 20,
-                  right: 20,
-                  fontFamily: "'Open Sans',sans-serif",
-                  fontSize: 11.5,
-                  color: 'rgba(255,255,255,0.85)',
-                  fontWeight: 600,
-                  letterSpacing: '.02em',
-                  textShadow: '0 1px 6px rgba(0,0,0,0.6)',
-                }}
-              >
-                ⬤ Técnico CleanPass · Usina em Jaraguá do Sul
-              </div>
-            </div>
-
-            <div
-              style={{
-                position: 'absolute',
-                top: -14,
-                left: -28,
-                background: 'white',
-                borderRadius: 12,
-                padding: '12px 14px',
-                boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
-                animation: 'pc-fadein-up .6s .6s ease both',
-                opacity: 0,
-                animationFillMode: 'both',
-                minWidth: 170,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontFamily: "'Open Sans',sans-serif",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: '#B45309',
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <span style={{ color: '#F59E0B' }}>⚡</span> Geração hoje
-              </div>
-              <div
-                style={{
-                  marginTop: 3,
-                  fontFamily: "'Montserrat',sans-serif",
-                  fontWeight: 800,
-                  fontSize: 15,
-                  color: COLORS.dark,
-                }}
-              >
-                +18,4% pós-limpeza
-              </div>
-            </div>
-
-            <div
-              style={{
-                position: 'absolute',
-                top: 60,
-                right: -20,
-                background: 'white',
-                borderRadius: 12,
-                padding: '10px 14px',
-                boxShadow: '0 12px 28px rgba(0,0,0,0.25)',
-                animation: 'pc-fadein-up .6s .8s ease both',
-                opacity: 0,
-                animationFillMode: 'both',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: 'rgba(61,196,90,0.12)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: 14,
-                }}
-              >
-                🛡️
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontFamily: "'Open Sans',sans-serif",
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    color: COLORS.green,
-                    letterSpacing: '.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Protegido
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'Montserrat',sans-serif",
-                    fontWeight: 800,
-                    fontSize: 13,
-                    color: COLORS.dark,
-                    marginTop: 1,
-                  }}
-                >
-                  Seguro incluso
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                position: 'absolute',
-                bottom: -18,
-                right: -28,
-                background: 'white',
-                borderRadius: 12,
-                padding: '12px 14px',
-                boxShadow: '0 12px 28px rgba(0,0,0,0.3)',
-                animation: 'pc-fadein-up .6s 1s ease both',
-                opacity: 0,
-                animationFillMode: 'both',
-                width: 220,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontFamily: "'Open Sans',sans-serif",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: COLORS.green,
-                  letterSpacing: '.06em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <span>✅</span> Relatório pronto
-              </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  fontFamily: "'Open Sans',sans-serif",
-                  fontSize: 12,
-                  color: COLORS.dark,
-                  lineHeight: 1.35,
-                  fontWeight: 600,
-                }}
-              >
-                12 fotos antes/depois
-                <br />
-                <span style={{ color: COLORS.muted, fontWeight: 500 }}>envio automático toda 1ª do mês</span>
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  height: 4,
-                  borderRadius: 2,
-                  background: COLORS.light,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    width: '82%',
-                    height: '100%',
-                    background: `linear-gradient(90deg, ${COLORS.green}, #6EE7A0)`,
-                    borderRadius: 2,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* right column: animation (desktop only) */}
+        {!isMobile && animPanel}
       </div>
     </section>
   );
