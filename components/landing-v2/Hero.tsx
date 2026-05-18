@@ -1,32 +1,32 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button, COLORS, useIsMobile } from './shared';
 
-// ---------- helpers ----------
+// ---------- color helpers ----------
+
+type C3 = [number, number, number];
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-function lerpRGB(
-  a: [number, number, number],
-  b: [number, number, number],
-  t: number,
-): string {
+function lerpRGB(a: C3, b: C3, t: number): string {
   return `rgb(${Math.round(lerp(a[0], b[0], t))},${Math.round(lerp(a[1], b[1], t))},${Math.round(lerp(a[2], b[2], t))})`;
 }
 
-// module face colors (dark → lit → bright)
-const C_DARK_TOP: [number, number, number]   = [26,  77,  56]; // #1a4d38
-const C_DARK_LEFT: [number, number, number]  = [13,  46,  32]; // #0d2e20
-const C_DARK_RIGHT: [number, number, number] = [18,  42,  28]; // #122a1c
-const C_LIT_TOP: [number, number, number]    = [61,  196, 90]; // #3DC45A
-const C_LIT_LEFT: [number, number, number]   = [42,  148, 68]; // #2a9444
-const C_LIT_RIGHT: [number, number, number]  = [31,  122, 53]; // #1f7a35
-const C_PEAK_TOP: [number, number, number]   = [127, 232, 154]; // #7FE89A
-const C_PEAK_LEFT: [number, number, number]  = [61,  196, 90]; // #3DC45A
-const C_PEAK_RIGHT: [number, number, number] = [42,  148, 68]; // #2a9444
+// 4-stop face color ramp: dark → medium-trail → lit → peak
+function faceColor(b: number, dark: C3, med: C3, lit: C3, peak: C3): string {
+  if (b < 0.45) return lerpRGB(dark, med, b / 0.45);
+  if (b < 0.75) return lerpRGB(med, lit, (b - 0.45) / 0.30);
+  return lerpRGB(lit, peak, (b - 0.75) / 0.25);
+}
+
+// face palettes  — top | left | right
+const TOP_D: C3  = [26,  77,  56];  const LEFT_D: C3  = [13,  46,  32];  const RIGHT_D: C3  = [18,  42,  28];
+const TOP_M: C3  = [42, 148,  68];  const LEFT_M: C3  = [22,  90,  44];  const RIGHT_M: C3  = [16,  72,  35];
+const TOP_L: C3  = [61, 196,  90];  const LEFT_L: C3  = [42, 148,  68];  const RIGHT_L: C3  = [31, 122,  53];
+const TOP_P: C3  = [127, 232, 154]; const LEFT_P: C3  = [61, 196,  90];  const RIGHT_P: C3  = [42, 148,  68];
 
 function drawModule(
   ctx: CanvasRenderingContext2D,
@@ -36,22 +36,13 @@ function drawModule(
   tileW: number,
   tileH: number,
 ) {
-  const cubeH = lerp(6, 20, brightness);
+  const cubeH = lerp(4, 22, brightness);
   const hw = tileW / 2;
   const hh = tileH / 2;
 
-  let topC: string, leftC: string, rightC: string;
-  if (brightness < 0.5) {
-    const t = brightness * 2;
-    topC   = lerpRGB(C_DARK_TOP,   C_LIT_TOP,   t);
-    leftC  = lerpRGB(C_DARK_LEFT,  C_LIT_LEFT,  t);
-    rightC = lerpRGB(C_DARK_RIGHT, C_LIT_RIGHT, t);
-  } else {
-    const t = (brightness - 0.5) * 2;
-    topC   = lerpRGB(C_LIT_TOP,   C_PEAK_TOP,   t);
-    leftC  = lerpRGB(C_LIT_LEFT,  C_PEAK_LEFT,  t);
-    rightC = lerpRGB(C_LIT_RIGHT, C_PEAK_RIGHT, t);
-  }
+  const topC   = faceColor(brightness, TOP_D,   TOP_M,   TOP_L,   TOP_P);
+  const leftC  = faceColor(brightness, LEFT_D,  LEFT_M,  LEFT_L,  LEFT_P);
+  const rightC = faceColor(brightness, RIGHT_D, RIGHT_M, RIGHT_L, RIGHT_P);
 
   // right face
   ctx.beginPath();
@@ -84,9 +75,11 @@ function drawModule(
   ctx.fill();
 }
 
-// ---------- IsometricGrid ----------
+// ---------- IsometricGrid canvas ----------
 
-function IsometricGrid({ style }: { style?: CSSProperties }) {
+const MAX_SIDE = 80;
+
+function IsometricGrid() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -95,61 +88,82 @@ function IsometricGrid({ style }: { style?: CSSProperties }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const COLS = 14;
-    const ROWS = 10;
-    const WAVE_SPEED = 0.008;
-    const MAX_DIAG = COLS + ROWS - 2; // 22
-    const CYCLE = MAX_DIAG + 10;      // 32 — gap before wave repeats
-    const LERP_F = 0.12;
-    const MAX_CUBE_H = 20;
+    const WAVE_SPEED = 0.005;
+    const LERP_F     = 0.10;
+    const TILE_W     = 48;
+    const TILE_H     = TILE_W / 2;
+    const MAX_CUBE_H = 22;
 
-    const bright: number[][] = Array.from({ length: ROWS }, () =>
-      new Array<number>(COLS).fill(0),
+    // pre-allocated brightness matrix
+    const bright: number[][] = Array.from(
+      { length: MAX_SIDE },
+      () => new Array<number>(MAX_SIDE).fill(0),
     );
+
     let wavePos = 0;
-    let animId = 0;
+    let animId  = 0;
+    let cols    = 0;
+    let rows    = 0;
 
     const resize = () => {
       canvas.width  = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
+
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const hw = TILE_W / 2;
+      const hh = TILE_H / 2;
+
+      // tiles needed to cover canvas in both axes
+      const diagH = Math.ceil(cw / hw) + 4;       // horizontal coverage
+      const diagV = Math.ceil(ch / hh) + 4;        // vertical coverage
+      const total = Math.max(diagH, diagV);
+
+      cols = Math.min(MAX_SIDE, Math.ceil(total / 2));
+      rows = Math.min(MAX_SIDE, total - cols + 2);  // slight bias toward rows for tall canvases
     };
+
     resize();
     window.addEventListener('resize', resize);
 
     const loop = () => {
       const cw = canvas.width;
       const ch = canvas.height;
+      const hw = TILE_W / 2;
+      const hh = TILE_H / 2;
 
-      // tile size: fill canvas width, cap at 48px
-      const tileW = Math.min(48, Math.floor(cw / (COLS + 2)));
-      const tileH = tileW / 2;
-      const hw = tileW / 2;
-      const hh = tileH / 2;
+      const COLS = cols;
+      const ROWS = rows;
+      const MAX_DIAG = COLS + ROWS - 2;
+      const CYCLE = MAX_DIAG + 22;
 
-      // grid vertical span: from top of (0,0) cube to bottom of last tile
-      const gridSpan = (COLS + ROWS - 1) * hh + tileH + MAX_CUBE_H;
+      // position grid so it covers the canvas: offsetX centered, offsetY at top
       const offsetX = cw / 2;
-      const offsetY = (ch - gridSpan) / 2 + MAX_CUBE_H;
+      const offsetY = MAX_CUBE_H + 2;
 
-      // advance wave
       wavePos = (wavePos + WAVE_SPEED) % CYCLE;
 
-      // update brightness per tile
+      // update brightness — wave travels from top-right → bottom-left
+      // anti-diagonal: 0 = top-right corner tile, MAX_DIAG = bottom-left
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
-          const diagIdx = col + row;
-          const d = (wavePos - diagIdx + CYCLE) % CYCLE;
+          const antidiag = (COLS - 1 - col) + row;
+          const d = (wavePos - antidiag + CYCLE) % CYCLE;
+
           let target = 0;
-          if (d < 1)       target = d;              // ramp up
-          else if (d < 3)  target = 1;              // peak
-          else if (d < 8)  target = 1 - (d - 3) / 5; // fade out
+          if (d < 0.5)      target = d * 2;
+          else if (d < 2.5) target = 1;
+          else if (d < 5.5) target = lerp(1, 0.42, (d - 2.5) / 3);
+          else if (d < 14)  target = 0.42;
+          else if (d < 18)  target = lerp(0.42, 0, (d - 14) / 4);
+
           bright[row][col] += (target - bright[row][col]) * LERP_F;
         }
       }
 
       ctx.clearRect(0, 0, cw, ch);
 
-      // painter's algorithm: draw diagonals back-to-front (low diag index = back)
+      // painter's algorithm: draw by col+row diagonal, ascending (back to front)
       for (let diag = 0; diag < COLS + ROWS - 1; diag++) {
         const colMin = Math.max(0, diag - ROWS + 1);
         const colMax = Math.min(diag, COLS - 1);
@@ -157,7 +171,12 @@ function IsometricGrid({ style }: { style?: CSSProperties }) {
           const row = diag - col;
           const sx = offsetX + (col - row) * hw;
           const sy = offsetY + (col + row) * hh;
-          drawModule(ctx, sx, sy, bright[row][col], tileW, tileH);
+
+          // skip tiles fully outside the visible canvas
+          if (sx + TILE_W < 0 || sx - TILE_W > cw) continue;
+          if (sy - MAX_CUBE_H > ch)                 continue;
+
+          drawModule(ctx, sx, sy, bright[row][col], TILE_W, TILE_H);
         }
       }
 
@@ -181,126 +200,12 @@ function IsometricGrid({ style }: { style?: CSSProperties }) {
         width: '100%',
         height: '100%',
         display: 'block',
-        ...style,
       }}
     />
   );
 }
 
-// ---------- floating cards ----------
-
-function CardGeneration() {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        background: 'white',
-        borderRadius: 12,
-        padding: '12px 16px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.20)',
-        minWidth: 158,
-        animation: 'pc-fadein-up .6s .8s ease both',
-        animationFillMode: 'both',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          fontFamily: "'Open Sans',sans-serif",
-          fontSize: 10.5,
-          fontWeight: 800,
-          color: '#1B3A2D',
-          letterSpacing: '.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        <span style={{ color: COLORS.green }}>⚡</span> Geração hoje
-      </div>
-      <div
-        style={{
-          fontFamily: "'Montserrat',sans-serif",
-          fontWeight: 800,
-          fontSize: 20,
-          color: COLORS.green,
-          margin: '4px 0 2px',
-          letterSpacing: '-.02em',
-        }}
-      >
-        38,2 kWh
-      </div>
-      <div
-        style={{
-          fontFamily: "'Open Sans',sans-serif",
-          fontSize: 12,
-          color: '#2DAF4A',
-          fontWeight: 600,
-        }}
-      >
-        ↑ 18,4% vs média
-      </div>
-    </div>
-  );
-}
-
-function CardNextCleaning() {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        background: '#1B3A2D',
-        borderRadius: 12,
-        padding: '12px 16px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.30)',
-        minWidth: 178,
-        animation: 'pc-fadein-up .6s 1s ease both',
-        animationFillMode: 'both',
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "'Open Sans',sans-serif",
-          fontSize: 10.5,
-          fontWeight: 800,
-          color: 'white',
-          letterSpacing: '.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        🧹 Próxima limpeza
-      </div>
-      <div
-        style={{
-          fontFamily: "'Montserrat',sans-serif",
-          fontWeight: 800,
-          fontSize: 16,
-          color: COLORS.green,
-          margin: '4px 0 2px',
-          letterSpacing: '-.01em',
-        }}
-      >
-        23 abr · 14h
-      </div>
-      <div
-        style={{
-          fontFamily: "'Open Sans',sans-serif",
-          fontSize: 12,
-          color: '#7A9A84',
-          fontWeight: 500,
-        }}
-      >
-        Técnico: Ricardo M.
-      </div>
-    </div>
-  );
-}
-
-// ---------- main Hero ----------
+// ---------- Hero ----------
 
 export default function Hero() {
   const isMobile = useIsMobile(640);
@@ -312,55 +217,50 @@ export default function Hero() {
     '✓ Seguro incluso',
   ] as const;
 
-  const animPanel = (
-    <div
-      style={{
-        position: 'relative',
-        height: isMobile ? 280 : 480,
-        borderRadius: 16,
-        overflow: 'hidden',
-        background: '#0F382B',
-        flexShrink: 0,
-        animation: 'pc-fadein-up 1s .3s ease both',
-        animationFillMode: 'both',
-      }}
-    >
-      <IsometricGrid />
-      {!isMobile && <CardGeneration />}
-      {!isMobile && <CardNextCleaning />}
-    </div>
-  );
-
   return (
     <section
       id="top"
       style={{
         position: 'relative',
-        background: 'linear-gradient(135deg, #1B3A2D 0%, #0E251C 100%)',
+        minHeight: isMobile ? 'auto' : '100vh',
+        background: '#0F382B',
         color: 'white',
         overflow: 'hidden',
       }}
     >
+      {/* Right-half full-bleed canvas — desktop only */}
+      {!isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: '50%',
+            zIndex: 1,
+          }}
+        >
+          <IsometricGrid />
+        </div>
+      )}
+
+      {/* Content column */}
       <div
         style={{
           position: 'relative',
           zIndex: 2,
-          maxWidth: 1280,
-          margin: '0 auto',
-          padding: isMobile ? '0 0 48px' : '80px 32px 100px',
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-          gap: isMobile ? 0 : 48,
+          width: isMobile ? '100%' : '50%',
+          minHeight: isMobile ? 'auto' : '100vh',
+          display: 'flex',
           alignItems: 'center',
+          padding: isMobile ? '80px 20px 40px' : '80px 48px 80px 56px',
         }}
       >
-        {/* mobile: animation above text */}
-        {isMobile && animPanel}
-
-        {/* left column: content */}
         <div
           style={{
-            padding: isMobile ? '32px 20px 0' : '0',
+            width: '100%',
+            maxWidth: isMobile ? 480 : 560,
+            margin: '0 auto',
             textAlign: isMobile ? 'center' : 'left',
             animation: 'pc-fadein-up .7s ease both',
           }}
@@ -428,7 +328,7 @@ export default function Hero() {
               fontWeight: 900,
               fontSize: isMobile
                 ? 'clamp(34px, 9vw, 46px)'
-                : 'clamp(40px, 4.2vw, 58px)',
+                : 'clamp(38px, 4vw, 56px)',
               lineHeight: 1.05,
               letterSpacing: '-.03em',
               color: 'white',
@@ -457,10 +357,10 @@ export default function Hero() {
               fontSize: isMobile ? 16 : 18,
               lineHeight: 1.55,
               color: 'rgba(255,255,255,0.82)',
-              margin: '22px auto 0',
-              maxWidth: 520,
+              margin: '22px 0 0',
               marginLeft: isMobile ? 'auto' : 0,
               marginRight: isMobile ? 'auto' : 0,
+              maxWidth: 500,
               textWrap: 'pretty',
             }}
           >
@@ -512,7 +412,7 @@ export default function Hero() {
               justifyContent: isMobile ? 'center' : 'flex-start',
               fontFamily: "'Open Sans',sans-serif",
               fontSize: 13,
-              color: 'rgba(255,255,255,0.75)',
+              color: 'rgba(255,255,255,0.72)',
               fontWeight: 600,
               animation: 'pc-fadein-up .9s .35s ease both',
               animationFillMode: 'both',
@@ -525,10 +425,20 @@ export default function Hero() {
             ))}
           </div>
         </div>
-
-        {/* right column: animation (desktop only) */}
-        {!isMobile && animPanel}
       </div>
+
+      {/* Mobile: canvas below text */}
+      {isMobile && (
+        <div
+          style={{
+            position: 'relative',
+            height: 320,
+            width: '100%',
+          }}
+        >
+          <IsometricGrid />
+        </div>
+      )}
     </section>
   );
 }
