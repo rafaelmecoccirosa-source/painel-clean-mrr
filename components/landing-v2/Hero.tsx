@@ -83,6 +83,8 @@ function IsometricGrid() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -115,15 +117,14 @@ function IsometricGrid() {
       const hh = TILE_H / 2;
 
       // tiles needed to cover canvas in both axes
-      const diagH = Math.ceil(cw / hw) + 4;       // horizontal coverage
-      const diagV = Math.ceil(ch / hh) + 4;        // vertical coverage
+      const diagH = Math.ceil(cw / hw) + 4;
+      const diagV = Math.ceil(ch / hh) + 4;
       const total = Math.max(diagH, diagV);
 
       cols = Math.min(MAX_SIDE, Math.ceil(total / 2));
-      rows = Math.min(MAX_SIDE, total - cols + 2);  // slight bias toward rows for tall canvases
+      rows = Math.min(MAX_SIDE, total - cols + 2);
     };
 
-    resize();
     window.addEventListener('resize', resize);
 
     const loop = () => {
@@ -183,7 +184,17 @@ function IsometricGrid() {
       animId = requestAnimationFrame(loop);
     };
 
-    loop();
+    // Defer start until canvas has real layout dimensions.
+    // If offsetWidth is still 0 (layout not yet complete), retry next frame.
+    const start = () => {
+      resize();
+      if (canvas.width === 0 || canvas.height === 0) {
+        animId = requestAnimationFrame(start);
+        return;
+      }
+      loop();
+    };
+    animId = requestAnimationFrame(start);
 
     return () => {
       cancelAnimationFrame(animId);
