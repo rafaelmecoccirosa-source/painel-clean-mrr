@@ -44,16 +44,6 @@ export default function Hero() {
         <SolarAnimation />
       </div>
 
-      {/* Wrapper alinhado com o header (maxWidth 1280) */}
-      <div style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        position: 'relative',
-        height: '100%',
-        minHeight: '100vh',
-        zIndex: 4,
-      }}>
-
       {/* Conteúdo — sobreposto à esquerda */}
       <div style={{
         position: 'absolute',
@@ -65,6 +55,7 @@ export default function Hero() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
+        zIndex: 4,
       }}>
         {/* Badges */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
@@ -183,7 +174,6 @@ export default function Hero() {
           ))}
         </div>
       </div>
-      </div>{/* fim wrapper */}
 
       <style>{`
         @keyframes fadeUp {
