@@ -500,6 +500,23 @@ COMMISSION_TECNICO = 0.75
 
 ---
 
+## Deploy — workflow obrigatório
+
+> `vercel.json` já tem `productionBranch: main`. Push para qualquer outra branch
+> cria só preview — **não vai pra produção automaticamente**.
+
+**Após finalizar qualquer feature branch, sempre:**
+1. Merge na `main` (via PR ou push direto se pequeno)
+2. O push na `main` dispara o deploy de produção no Vercel automaticamente
+3. Não precisa entrar no painel do Vercel para "promover"
+
+**Fluxo padrão:**
+```
+feature-branch → (build ok + testado) → merge main → Vercel produção ✓
+```
+
+---
+
 ## Checklist antes de mergear
 
 - [ ] `npm run build` com 0 erros
