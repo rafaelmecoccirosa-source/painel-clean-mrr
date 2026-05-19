@@ -8,13 +8,11 @@ export default function Hero() {
     <section style={{
       minHeight: '100vh',
       background: '#0B2D1E',
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
       position: 'relative',
       overflow: 'hidden',
     }}>
 
-      {/* Fundo com gradiente radial + linhas diagonais — igual versão com foto */}
+      {/* Gradiente radial de fundo */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -41,15 +39,23 @@ export default function Hero() {
         zIndex: 1,
       }}/>
 
-      {/* Coluna esquerda — conteúdo */}
+      {/* Animação Three.js — fundo completo */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+        <SolarAnimation />
+      </div>
+
+      {/* Conteúdo — sobreposto à esquerda */}
       <div style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: '52%',
+        padding: '0 32px 0 clamp(24px,5vw,64px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        padding: 'clamp(40px,5vh,80px) 48px clamp(40px,5vh,80px) clamp(24px,5vw,64px)',
-        position: 'relative',
-        zIndex: 3,
-        maxWidth: 560,
+        zIndex: 4,
       }}>
         {/* Badges */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
@@ -71,7 +77,6 @@ export default function Hero() {
           }}>🇧🇷 Feito em Santa Catarina</span>
         </div>
 
-        {/* Título com animação de entrada */}
         <h1 style={{
           fontFamily: 'Montserrat, sans-serif',
           fontSize: 'clamp(32px, 3.8vw, 58px)',
@@ -79,6 +84,7 @@ export default function Hero() {
           color: '#fff',
           lineHeight: 1.08,
           margin: '0 0 4px',
+          textShadow: '0 2px 20px rgba(0,0,0,0.4)',
           animation: 'fadeUp 0.8s ease-out both',
         }}>Sua usina solar<br/>merece cuidado</h1>
         <h1 style={{
@@ -88,6 +94,7 @@ export default function Hero() {
           color: '#3DC45A',
           lineHeight: 1.08,
           margin: '0 0 24px',
+          textShadow: '0 2px 20px rgba(0,0,0,0.4)',
           animation: 'fadeUp 0.8s 0.1s ease-out both',
         }}>todo mês.</h1>
 
@@ -97,6 +104,7 @@ export default function Hero() {
           lineHeight: 1.65,
           margin: '0 0 36px',
           maxWidth: 420,
+          textShadow: '0 1px 8px rgba(0,0,0,0.3)',
           animation: 'fadeUp 0.8s 0.2s ease-out both',
         }}>
           Painéis sujos podem perder até{' '}
@@ -132,7 +140,8 @@ export default function Hero() {
             Assinar agora →
           </a>
           <a href="#calculadora" style={{
-            background: 'transparent',
+            background: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(4px)',
             color: '#fff',
             fontWeight: 600,
             fontSize: 15,
@@ -144,11 +153,11 @@ export default function Hero() {
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.5)'
-            ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'
+            ;(e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.45)'
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.25)'
-            ;(e.currentTarget as HTMLElement).style.background = 'transparent'
+            ;(e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.3)'
           }}>
             Calcular economia
           </a>
@@ -161,14 +170,9 @@ export default function Hero() {
           animation: 'fadeUp 0.8s 0.4s ease-out both',
         }}>
           {['🧹 2 limpezas/ano','⚡ Relatório mensal','🔧 Checkup técnico','🛡️ Seguro incluso'].map(item => (
-            <span key={item} style={{ color: 'rgba(200,223,192,0.6)', fontSize: 13 }}>{item}</span>
+            <span key={item} style={{ color: 'rgba(200,223,192,0.6)', fontSize: 13, textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}>{item}</span>
           ))}
         </div>
-      </div>
-
-      {/* Coluna direita — animação Three.js */}
-      <div style={{ position: 'relative', zIndex: 2 }}>
-        <SolarAnimation />
       </div>
 
       <style>{`
@@ -177,8 +181,12 @@ export default function Hero() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @media (max-width: 640px) {
-          section { grid-template-columns: 1fr !important; }
-          section > div:last-child { height: 300px; }
+          section > div:nth-child(4) {
+            position: relative !important;
+            width: 100% !important;
+            padding: 60px 24px 40px !important;
+            min-height: 100vh;
+          }
         }
       `}</style>
     </section>
