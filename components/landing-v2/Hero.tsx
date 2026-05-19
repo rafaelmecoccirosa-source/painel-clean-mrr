@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { COLORS } from '@/lib/brand-tokens'
 
 export default function Hero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -15,6 +14,7 @@ export default function Hero() {
 
     let animId: number
     let cells: any[] = []
+    let COLS = 0, ROWS = 0
 
     const DARK_TOP    = '#1a4d38'
     const DARK_LEFT   = '#0d2e20'
@@ -72,10 +72,10 @@ export default function Hero() {
       ctx.fill()
     }
 
-    function buildCells(COLS: number, ROWS: number) {
+    function buildCells(cols: number, rows: number) {
       cells = []
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
           cells.push({
             col: c, row: r,
             phase: Math.random() * Math.PI * 2,
@@ -95,19 +95,20 @@ export default function Hero() {
       canvas.height = canvas.offsetHeight
     }
 
-    function start() {
+    function init() {
       resize()
-      if (canvas.width === 0) { animId = requestAnimationFrame(start); return }
 
-      const CELL   = 48
-      const ISO_X  = CELL * 0.58
-      const ISO_Y  = CELL * 0.30
-      const COLS   = Math.ceil(canvas.width  / (ISO_X) + 4)
-      const ROWS   = Math.ceil(canvas.height / (ISO_Y * 2) + 4)
+      const CELL  = 48
+      const ISO_X = CELL * 0.58
+      const ISO_Y = CELL * 0.30
+      COLS = Math.ceil(canvas.width  / ISO_X + 4)
+      ROWS = Math.ceil(canvas.height / (ISO_Y * 2) + 4)
       buildCells(COLS, ROWS)
 
-      const offsetX = canvas.width  * 0.52
-      const offsetY = canvas.height * 0.78
+      const offsetX = canvas.width  * 0.5
+      const offsetY = canvas.height * 0.6
+
+      cancelAnimationFrame(animId)
 
       function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -148,12 +149,23 @@ export default function Hero() {
       loop()
     }
 
-    animId = requestAnimationFrame(start)
-    window.addEventListener('resize', () => { resize(); })
+    // Aguarda o canvas ter dimensões reais antes de iniciar
+    const ro = new ResizeObserver(() => {
+      if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+        ro.disconnect()
+        init()
+      }
+    })
+    ro.observe(canvas)
+
+    // Re-init no resize da janela
+    const onResize = () => { init() }
+    window.addEventListener('resize', onResize)
 
     return () => {
       cancelAnimationFrame(animId)
-      window.removeEventListener('resize', () => {})
+      ro.disconnect()
+      window.removeEventListener('resize', onResize)
     }
   }, [])
 
@@ -161,10 +173,10 @@ export default function Hero() {
     <section style={{
       minHeight: '100vh',
       background: '#0F382B',
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
       position: 'relative',
       overflow: 'hidden',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
     }}>
       {/* Coluna esquerda — conteúdo */}
       <div style={{
@@ -174,6 +186,7 @@ export default function Hero() {
         padding: '80px 48px 80px 64px',
         position: 'relative',
         zIndex: 2,
+        maxWidth: 600,
       }}>
         <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
           <span style={{
@@ -259,12 +272,17 @@ export default function Hero() {
       </div>
 
       {/* Coluna direita — canvas isométrico */}
-      <div style={{ position: 'relative' }}>
+      <div style={{
+        position: 'absolute',
+        top: 0, right: 0,
+        width: '50%',
+        bottom: 0,
+      }}>
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
-            top: 0, left: 0,
+            top: 0, left: 0, right: 0, bottom: 0,
             width: '100%',
             height: '100%',
             display: 'block',
@@ -275,10 +293,9 @@ export default function Hero() {
       {/* Mobile */}
       <style>{`
         @media (max-width: 640px) {
-          section { grid-template-columns: 1fr !important; }
-          section > div:first-child { padding: 60px 24px 32px !important; }
-          section > div:last-child { height: 300px; position: relative; }
-          section > div:last-child canvas { position: absolute !important; }
+          section { grid-template-columns: 1fr !important; min-height: auto !important; }
+          section > div:first-child { padding: 60px 24px 32px !important; max-width: 100% !important; }
+          section > div:nth-child(2) { position: relative !important; width: 100% !important; height: 300px !important; bottom: auto !important; }
         }
       `}</style>
     </section>
