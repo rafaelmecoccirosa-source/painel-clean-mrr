@@ -95,7 +95,14 @@ export default function Hero() {
       <div style={{display:'flex',flexDirection:'column',justifyContent:'center',padding:'80px 48px 80px 64px',position:'relative',zIndex:2,maxWidth:640}}>
         <div style={{display:'flex',gap:10,marginBottom:28,flexWrap:'wrap'}}>
           <span style={{background:'rgba(61,196,90,0.15)',border:'0.5px solid rgba(61,196,90,0.4)',color:'#3DC45A',fontSize:12,padding:'5px 14px',borderRadius:100}}>⚡ 1ª limpeza com 50% off</span>
-          <span style={{background:'rgba(255,255,255,0.07)',border:'0.5px solid rgba(255,255,255,0.15)',color:'#C8DFC0',fontSize:12,padding:'5px 14px',borderRadius:100}}>🇧🇷 Feito em Santa Catarina</span>
+          <span style={{background:'rgba(255,255,255,0.07)',border:'0.5px solid rgba(255,255,255,0.15)',color:'#C8DFC0',fontSize:12,padding:'5px 14px',borderRadius:100,display:'inline-flex',alignItems:'center',gap:6}}>
+            <svg width="18" height="13" viewBox="0 0 18 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="18" height="13" rx="2" fill="#009C3B"/>
+              <polygon points="9,1.5 16.5,6.5 9,11.5 1.5,6.5" fill="#FFDF00"/>
+              <circle cx="9" cy="6.5" r="2.8" fill="#002776"/>
+            </svg>
+            Feito em Santa Catarina
+          </span>
         </div>
         <h1 style={{fontFamily:'Montserrat,sans-serif',fontSize:'clamp(32px,3.5vw,54px)',fontWeight:800,color:'#fff',lineHeight:1.1,margin:'0 0 4px'}}>Sua usina solar<br/>merece cuidado</h1>
         <h1 style={{fontFamily:'Montserrat,sans-serif',fontSize:'clamp(32px,3.5vw,54px)',fontWeight:800,color:'#3DC45A',lineHeight:1.1,margin:'0 0 24px'}}>todo mês.</h1>
