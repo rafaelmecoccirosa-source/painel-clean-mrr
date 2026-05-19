@@ -299,6 +299,7 @@ export default function Hero() {
                 fontFamily: "'Open Sans',sans-serif",
                 fontSize: 12.5,
                 fontWeight: 700,
+                letterSpacing: '.02em',
               }}
             >
               <span
@@ -311,7 +312,7 @@ export default function Hero() {
                   animation: 'pc-pulse 2s ease-in-out infinite',
                 }}
               />
-              ⚡ Próxima visita em 48h
+              1ª limpeza com 50% off
             </span>
             <span
               style={{
@@ -328,7 +329,13 @@ export default function Hero() {
                 fontWeight: 600,
               }}
             >
-              ✓ Técnico certificado
+              <svg width="18" height="13" viewBox="0 0 20 14" style={{ flexShrink: 0, borderRadius: 1.5 }}>
+                <rect width="20" height="14" fill="#009B3A" />
+                <path d="M 10 2 L 18 7 L 10 12 L 2 7 Z" fill="#FEDF00" />
+                <circle cx="10" cy="7" r="2.6" fill="#002776" />
+                <path d="M 7.8 7.4 Q 10 6.2 12.2 7.4" stroke="white" strokeWidth="0.35" fill="none" />
+              </svg>
+              Feito em Santa Catarina
             </span>
           </div>
 
