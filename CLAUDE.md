@@ -4,7 +4,7 @@
 > Todas as implementações vão aqui. A v1 (painel-clean-plataforma) é só referência histórica — nunca editar.
 
 > Contexto completo do projeto para o Claude Code.
-> Atualizado em: 2026-05-15
+> Atualizado em: 2026-05-19
 > Leia este arquivo inteiro antes de qualquer implementação.
 > **Este é o repo MRR — modelo assinatura (Netflix). A v1 está em github.com/rafaelmecoccirosa-source/painel-clean-plataforma**
 
@@ -455,6 +455,15 @@ redirect('/admin')
 - `components/landing-v2/` — componentes da landing MRR
 - **`'use client'` obrigatório** em todo componente com hooks ou event handlers
 
+### Hero atual (isométrico)
+- `Hero.tsx` — layout 50/50 (desktop): texto à esquerda, animação canvas isométrica à direita (full-bleed)
+  - Canvas usa `ResizeObserver` + `getBoundingClientRect()` para inicialização confiável
+  - Onda viaja top-right → bottom-left com trail de verde médio (brightness 0.42)
+  - Mobile: canvas 320px full-width abaixo do texto
+  - Trust items: SVG solar + ⚡ Relatório mensal + ✅ Checkup técnico + 🛡️ Seguro na limpeza
+- `Hero.backup.tsx` — backup da versão com foto + 3 cards flutuantes — **apagar após confirmar em produção**
+- `HowItWorks.tsx` — usa a foto do hero (`HERO_PHOTO`) como background da seção com overlay `rgba(15,56,43,0.70)`
+
 ---
 
 ## Mapa de técnicos (`/admin/mapa`)
@@ -530,7 +539,8 @@ feature-branch → (build ok + testado) → merge main → Vercel produção ✓
 - [ ] Commits cirúrgicos sem CRLF churn
 - [ ] Tagline correta: "Limpeza e Cuidado para Usinas Solares"
 - [ ] Menu cliente na ordem: Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
-- [ ] Partículas usando canvas-based de `components/landing-v2/shared.tsx` (landing MRR)
+- [ ] Partículas usando canvas-based de `components/landing-v2/shared.tsx` (seções que usam Particles — não o Hero)
+- [ ] Hero isométrico: canvas inicializa via ResizeObserver (não offsetWidth)
 - [ ] Animações fade-up nas seções (classes do globals.css)
 - [ ] Relatório de limpeza (`service_reports`) preenchido pelo técnico antes de concluir serviço
 - [ ] Relatório mensal (`monthly_reports`) distinto do relatório de limpeza
