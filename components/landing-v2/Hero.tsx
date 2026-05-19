@@ -51,12 +51,10 @@ export default function Hero() {
         top: 0,
         bottom: 0,
         width: '52%',
-        padding: '0 40px 0 clamp(40px,8vw,120px)',
-        paddingTop: 'clamp(80px,12vh,140px)',
+        padding: '0 40px 0 clamp(24px,4vw,56px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
+        justifyContent: 'center',
         zIndex: 4,
       }}>
         {/* Badges */}
