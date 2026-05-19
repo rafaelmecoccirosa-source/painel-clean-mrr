@@ -51,10 +51,12 @@ export default function Hero() {
         top: 0,
         bottom: 0,
         width: '52%',
-        padding: '0 32px 0 clamp(24px,5vw,64px)',
+        padding: '0 40px 0 clamp(40px,8vw,120px)',
+        paddingTop: 'clamp(80px,12vh,140px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
         zIndex: 4,
       }}>
         {/* Badges */}
@@ -74,7 +76,7 @@ export default function Hero() {
             fontSize: 12,
             padding: '5px 14px',
             borderRadius: 100,
-          }}>🇧🇷 Feito em Santa Catarina</span>
+          }}>SC · Feito em Santa Catarina</span>
         </div>
 
         <h1 style={{
