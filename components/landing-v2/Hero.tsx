@@ -90,13 +90,12 @@ function IsometricGrid() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const WAVE_SPEED = 0.005;
+    const WAVE_SPEED = 0.018;
     const LERP_F     = 0.10;
     const TILE_W     = 48;
     const TILE_H     = TILE_W / 2;
     const MAX_CUBE_H = 22;
 
-    // pre-allocated brightness matrix
     const bright: number[][] = Array.from(
       { length: MAX_SIDE },
       () => new Array<number>(MAX_SIDE).fill(0),
@@ -106,26 +105,22 @@ function IsometricGrid() {
     let animId  = 0;
     let cols    = 0;
     let rows    = 0;
+    let running = false;
 
-    const resize = () => {
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-
-      const cw = canvas.width;
-      const ch = canvas.height;
+    const setSize = (): boolean => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+      canvas.width  = Math.round(rect.width);
+      canvas.height = Math.round(rect.height);
       const hw = TILE_W / 2;
       const hh = TILE_H / 2;
-
-      // tiles needed to cover canvas in both axes
-      const diagH = Math.ceil(cw / hw) + 4;
-      const diagV = Math.ceil(ch / hh) + 4;
+      const diagH = Math.ceil(canvas.width  / hw) + 4;
+      const diagV = Math.ceil(canvas.height / hh) + 4;
       const total = Math.max(diagH, diagV);
-
       cols = Math.min(MAX_SIDE, Math.ceil(total / 2));
       rows = Math.min(MAX_SIDE, total - cols + 2);
+      return true;
     };
-
-    window.addEventListener('resize', resize);
 
     const loop = () => {
       const cw = canvas.width;
@@ -138,14 +133,11 @@ function IsometricGrid() {
       const MAX_DIAG = COLS + ROWS - 2;
       const CYCLE = MAX_DIAG + 22;
 
-      // position grid so it covers the canvas: offsetX centered, offsetY at top
       const offsetX = cw / 2;
       const offsetY = MAX_CUBE_H + 2;
 
       wavePos = (wavePos + WAVE_SPEED) % CYCLE;
 
-      // update brightness — wave travels from top-right → bottom-left
-      // anti-diagonal: 0 = top-right corner tile, MAX_DIAG = bottom-left
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
           const antidiag = (COLS - 1 - col) + row;
@@ -164,7 +156,6 @@ function IsometricGrid() {
 
       ctx.clearRect(0, 0, cw, ch);
 
-      // painter's algorithm: draw by col+row diagonal, ascending (back to front)
       for (let diag = 0; diag < COLS + ROWS - 1; diag++) {
         const colMin = Math.max(0, diag - ROWS + 1);
         const colMax = Math.min(diag, COLS - 1);
@@ -173,7 +164,6 @@ function IsometricGrid() {
           const sx = offsetX + (col - row) * hw;
           const sy = offsetY + (col + row) * hh;
 
-          // skip tiles fully outside the visible canvas
           if (sx + TILE_W < 0 || sx - TILE_W > cw) continue;
           if (sy - MAX_CUBE_H > ch)                 continue;
 
@@ -184,21 +174,22 @@ function IsometricGrid() {
       animId = requestAnimationFrame(loop);
     };
 
-    // Defer start until canvas has real layout dimensions.
-    // If offsetWidth is still 0 (layout not yet complete), retry next frame.
-    const start = () => {
-      resize();
-      if (canvas.width === 0 || canvas.height === 0) {
-        animId = requestAnimationFrame(start);
-        return;
+    const tryStart = () => {
+      if (running) { setSize(); return; }
+      if (setSize()) {
+        running = true;
+        loop();
       }
-      loop();
     };
-    animId = requestAnimationFrame(start);
+
+    // ResizeObserver fires as soon as the element gets real layout dimensions
+    const ro = new ResizeObserver(tryStart);
+    ro.observe(canvas);
+    tryStart();
 
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
+      ro.disconnect();
     };
   }, []);
 
@@ -222,10 +213,27 @@ export default function Hero() {
   const isMobile = useIsMobile(640);
 
   const trustItems = [
-    '✓ Equipamentos próprios',
-    '✓ Monitoramento 24/7',
-    '✓ Relatório mensal',
-    '✓ Seguro incluso',
+    {
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6EE7A0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M 3 18 L 11 18 L 13 8 L 5 8 Z" fill="rgba(110,231,160,0.15)" />
+          <line x1="5" y1="13" x2="12" y2="13" />
+          <line x1="8.5" y1="8" x2="7" y2="18" />
+          <rect x="15" y="3" width="5.5" height="2.5" rx="0.5" fill="#6EE7A0" stroke="none" />
+          <line x1="15.5" y1="5.5" x2="15.5" y2="7.5" />
+          <line x1="17" y1="5.5" x2="17" y2="7.5" />
+          <line x1="18.5" y1="5.5" x2="18.5" y2="7.5" />
+          <line x1="20" y1="5.5" x2="20" y2="7.5" />
+          <circle cx="16" cy="11" r="0.9" fill="#6EE7A0" stroke="none" />
+          <circle cx="19" cy="13" r="0.7" fill="#6EE7A0" stroke="none" opacity="0.7" />
+          <circle cx="17" cy="15" r="0.6" fill="#6EE7A0" stroke="none" opacity="0.5" />
+        </svg>
+      ),
+      label: '2 limpezas/ano',
+    },
+    { icon: '⚡', label: 'Relatório mensal' },
+    { icon: '✅', label: 'Checkup técnico' },
+    { icon: '🛡️', label: 'Seguro na limpeza' },
   ] as const;
 
   return (
@@ -437,8 +445,14 @@ export default function Hero() {
             }}
           >
             {trustItems.map((item) => (
-              <span key={item} style={{ whiteSpace: 'nowrap' }}>
-                {item}
+              <span
+                key={item.label}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
+              >
+                <span style={{ color: '#6EE7A0', fontSize: 14, display: 'inline-flex', alignItems: 'center' }}>
+                  {item.icon}
+                </span>
+                <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
               </span>
             ))}
           </div>
