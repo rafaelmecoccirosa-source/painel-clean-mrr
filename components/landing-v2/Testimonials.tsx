@@ -66,7 +66,7 @@ export default function Testimonials() {
                 border: `1px solid ${COLORS.border}`,
                 borderRadius: 16,
                 padding: isMobile ? 22 : 28,
-                transition: 'all .25s',
+                transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                 animation: `pc-slideup .5s ${i * 0.08}s ease both`,
               }}
               onMouseEnter={(e) => {

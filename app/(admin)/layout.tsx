@@ -54,7 +54,7 @@ export default async function AdminLayout({
       <main className="flex-1">{children}</main>
       <footer className="bg-brand-dark text-white/50 py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-center space-y-1">
-          <p>© {new Date().getFullYear()} PainelClean — Painel Administrativo.</p>
+          <p>© {new Date().getFullYear()} CleanPass — Painel Administrativo.</p>
           <p>
             <Link href="/termos" className="text-white/40 hover:text-white/70 underline transition-colors">
               Termos de Uso

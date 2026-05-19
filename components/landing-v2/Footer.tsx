@@ -22,7 +22,7 @@ export default function Footer() {
     {
       title: 'Empresa',
       links: [
-        { label: 'Sobre a Painel Clean', href: '#' },
+        { label: 'Sobre a CleanPass', href: '#' },
         { label: 'Para técnicos', href: '#para-tecnicos' },
         { label: 'Parcerias', href: '#' },
         { label: 'Imprensa', href: '#' },
@@ -141,7 +141,7 @@ export default function Footer() {
                     placeItems: 'center',
                     color: 'rgba(255,255,255,0.85)',
                     textDecoration: 'none',
-                    transition: 'all .2s',
+                    transition: 'transform 200ms cubic-bezier(0.23,1,0.32,1)',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = COLORS.green;
@@ -189,7 +189,7 @@ export default function Footer() {
                         textDecoration: 'none',
                         fontFamily: "'Open Sans',sans-serif",
                         fontSize: 14,
-                        transition: 'color .15s',
+                        transition: 'color 150ms ease',
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = COLORS.green)}
                       onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.65)')}
@@ -237,7 +237,7 @@ export default function Footer() {
               textAlign: isMobile ? 'left' : 'right',
             }}
           >
-            © 2026 Painel Clean · Feito em Santa Catarina 🇧🇷
+            © 2026 CleanPass · Feito em Santa Catarina 🇧🇷
             <br />
             <span style={{ opacity: 0.8 }}>Em conformidade com a LGPD (Lei nº 13.709/2018)</span>
           </div>

@@ -129,7 +129,7 @@ export default function ServiceReport({ data, onClose }: Props) {
             <div style={{ background: "#1B3A2D", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <p style={{ color: "#3DC45A", fontWeight: "900", fontSize: "22px", margin: 0 }}>Painel Clean</p>
+                  <p style={{ color: "#3DC45A", fontWeight: "900", fontSize: "22px", margin: 0 }}>CleanPass</p>
                   <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "11px", margin: "2px 0 0" }}>painelclean.com.br</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -310,7 +310,7 @@ export default function ServiceReport({ data, onClose }: Props) {
               <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "11px", margin: "0 0 4px" }}>
                 🛡️ Serviço coberto por seguro contra danos acidentais
               </p>
-              <p style={{ color: "#3DC45A", fontWeight: "700", fontSize: "13px", margin: "0 0 2px" }}>Painel Clean Plataforma</p>
+              <p style={{ color: "#3DC45A", fontWeight: "700", fontSize: "13px", margin: "0 0 2px" }}>CleanPass</p>
               <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "10px", margin: 0 }}>painelclean.com.br · Obrigado pela confiança!</p>
             </div>
 
