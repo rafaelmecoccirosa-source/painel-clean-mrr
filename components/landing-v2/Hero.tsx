@@ -195,7 +195,7 @@ export default function Hero() {
             width: 100% !important;
             height: 260px !important;
             order: 2 !important;
-            margin-top: -40px !important;
+            margin-top: -80px !important;
           }
           section > div:nth-child(4) {
             position: relative !important;
