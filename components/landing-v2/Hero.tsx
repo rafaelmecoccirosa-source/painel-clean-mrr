@@ -174,14 +174,7 @@ export default function Hero() {
         }}>
           {([
             { icon: '🧹', label: '2 limpezas/ano' },
-            { icon: (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle'}}>
-                <rect x="8" y="2" width="8" height="4" rx="1"/>
-                <path d="M16 2h2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h2"/>
-                <line x1="9" y1="12" x2="15" y2="12"/>
-                <line x1="9" y1="16" x2="15" y2="16"/>
-              </svg>
-            ), label: 'Relatório mensal' },
+            { icon: '📋', label: 'Relatório mensal' },
             { icon: '🔧', label: 'Checkup técnico' },
             { icon: '🛡️', label: 'Seguro incluso' },
           ] as {icon: React.ReactNode, label: string}[]).map(({ icon, label }) => (
