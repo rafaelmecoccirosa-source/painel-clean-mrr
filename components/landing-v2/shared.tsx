@@ -393,7 +393,7 @@ export function LogoLockup({
     <div>
       <CleanPassLogo
         variant={inverted ? 'dark' : 'light'}
-        size={40}
+        size={52}
         showWordmark={true}
         showTagline={showTagline}
       />

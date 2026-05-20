@@ -1,5 +1,8 @@
 import Image from 'next/image'
 
+// PNG original: 1086×263 → aspect ratio ≈ 4.13
+const LOGO_ASPECT = 1086 / 263
+
 interface Props {
   size?: number
   variant?: 'light' | 'dark'
@@ -8,7 +11,7 @@ interface Props {
 }
 
 export default function CleanPassLogo({
-  size = 40,
+  size = 44,
   variant = 'light',
   showTagline = false,
 }: Props) {
@@ -16,14 +19,17 @@ export default function CleanPassLogo({
     ? '/logo-cleanpass-negativo.png'
     : '/logo-cleanpass-normal.png'
 
+  const h = size
+  const w = Math.round(size * LOGO_ASPECT)
+
   return (
     <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
       <Image
         src={src}
         alt="CleanPass logo"
-        width={size}
-        height={size}
-        style={{ display: 'block' }}
+        width={w}
+        height={h}
+        style={{ display: 'block', width: w, height: h }}
         priority
       />
       {showTagline && (

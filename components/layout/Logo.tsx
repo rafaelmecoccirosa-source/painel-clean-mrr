@@ -6,7 +6,7 @@ interface LogoProps {
   size?: "sm" | "md" | "lg";
 }
 
-const sizeMap = { sm: 32, md: 36, lg: 44 };
+const sizeMap = { sm: 40, md: 48, lg: 56 };
 
 export default function Logo({ inverted = false, size = "md" }: LogoProps) {
   return (
