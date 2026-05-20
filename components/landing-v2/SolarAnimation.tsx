@@ -17,13 +17,13 @@ export default function SolarAnimation() {
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(45, W/H, 1, 10000)
     camera.position.set(
-      isMobile ? -300 : 160,
-      isMobile ?  300 : 221,
-      isMobile ?  500 : 574
+      isMobile ? 199 : 160,
+      isMobile ? 131 : 221,
+      isMobile ? 260 : 574
     )
     camera.lookAt(
-      isMobile ?    0 : -408,
-      isMobile ?   50 : -200,
+      isMobile ? -356 : -408,
+      isMobile ? -200 : -200,
       -40
     )
 
@@ -166,11 +166,11 @@ export default function SolarAnimation() {
     // DEBUG PANEL — remover após ajuste
     const panel = document.createElement('div')
     panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:16px;border-radius:8px;z-index:9999;font-family:monospace;font-size:12px;width:280px'
-    const defX  = isMobile ? -300 : 160
-    const defY  = isMobile ?  300 : 221
-    const defZ  = isMobile ?  500 : 574
-    const defTX = isMobile ?    0 : -408
-    const defTY = isMobile ?   50 : -200
+    const defX  = isMobile ?  199 : 160
+    const defY  = isMobile ?  131 : 221
+    const defZ  = isMobile ?  260 : 574
+    const defTX = isMobile ? -356 : -408
+    const defTY = isMobile ? -200 : -200
 
     panel.innerHTML = `
   <div style="font-size:10px;color:#aaa;margin-bottom:6px">${isMobile ? '📱 MOBILE' : '🖥 DESKTOP'}</div>

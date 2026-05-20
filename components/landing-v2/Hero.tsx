@@ -187,20 +187,26 @@ export default function Hero() {
             display: flex !important;
             flex-direction: column !important;
             min-height: auto !important;
+            overflow: visible !important;
           }
           section > div:nth-child(3) {
             position: relative !important;
+            inset: unset !important;
             width: 100% !important;
             height: 260px !important;
-            order: 2;
-            inset: unset !important;
+            order: 2 !important;
+            margin-top: -40px !important;
           }
           section > div:nth-child(4) {
             position: relative !important;
+            inset: unset !important;
+            left: unset !important;
+            top: unset !important;
+            bottom: unset !important;
             width: 100% !important;
             padding: 60px 24px 24px !important;
             min-height: auto !important;
-            order: 1;
+            order: 1 !important;
           }
         }
       `}</style>
