@@ -7,7 +7,7 @@ const SolarAnimation = dynamic(() => import('./SolarAnimation'), { ssr: false })
 export default function Hero() {
   return (
     <section style={{
-      minHeight: '52vh',
+      minHeight: '75vh',
       background: '#0B2D1E',
       position: 'relative',
       overflow: 'hidden',
