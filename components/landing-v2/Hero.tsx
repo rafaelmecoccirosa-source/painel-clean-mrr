@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import dynamic from 'next/dynamic'
 
 const SolarAnimation = dynamic(() => import('./SolarAnimation'), { ssr: false })
@@ -76,7 +77,7 @@ export default function Hero() {
             fontSize: 12,
             padding: '5px 14px',
             borderRadius: 100,
-          }}><span style={{fontFamily:'Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif'}}>🇧🇷</span> SC · Feito em Santa Catarina</span>
+          }}><svg width="18" height="12" viewBox="0 0 18 12" style={{display:'inline',verticalAlign:'middle',marginRight:5,borderRadius:1}} aria-label="Brasil"><rect width="18" height="12" fill="#009B3A"/><polygon points="9,1.2 16.8,6 9,10.8 1.2,6" fill="#FEDF00"/><circle cx="9" cy="6" r="2.8" fill="#002776"/></svg>SC · Feito em Santa Catarina</span>
         </div>
 
         <h1 style={{
@@ -171,8 +172,22 @@ export default function Hero() {
           flexWrap: 'wrap',
           animation: 'fadeUp 0.8s 0.4s ease-out both',
         }}>
-          {['🧹 2 limpezas/ano','⚡ Relatório mensal','🔧 Checkup técnico','🛡️ Seguro incluso'].map(item => (
-            <span key={item} style={{ color: 'rgba(200,223,192,0.6)', fontSize: 13, textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}>{item}</span>
+          {([
+            { icon: '🧹', label: '2 limpezas/ano' },
+            { icon: (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle'}}>
+                <rect x="8" y="2" width="8" height="4" rx="1"/>
+                <path d="M16 2h2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h2"/>
+                <line x1="9" y1="12" x2="15" y2="12"/>
+                <line x1="9" y1="16" x2="15" y2="16"/>
+              </svg>
+            ), label: 'Relatório mensal' },
+            { icon: '🔧', label: 'Checkup técnico' },
+            { icon: '🛡️', label: 'Seguro incluso' },
+          ] as {icon: React.ReactNode, label: string}[]).map(({ icon, label }) => (
+            <span key={label} style={{ color: 'rgba(200,223,192,0.6)', fontSize: 13, textShadow: '0 1px 6px rgba(0,0,0,0.4)', display:'flex', alignItems:'center', gap:5 }}>
+              {icon} {label}
+            </span>
           ))}
         </div>
       </div>
