@@ -76,7 +76,7 @@ export default function Hero() {
             fontSize: 12,
             padding: '5px 14px',
             borderRadius: 100,
-          }}>SC · Feito em Santa Catarina</span>
+          }}>🇧🇷 SC · Feito em Santa Catarina</span>
         </div>
 
         <h1 style={{
@@ -114,10 +114,10 @@ export default function Hero() {
           Mantenha sua geração no máximo com assinatura mensal a partir de R$ 30.
         </p>
 
-        <div style={{
+        <div className="hero-btns" style={{
           display: 'flex',
           gap: 12,
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           marginBottom: 32,
           animation: 'fadeUp 0.8s 0.3s ease-out both',
         }}>
@@ -183,6 +183,12 @@ export default function Hero() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @media (max-width: 640px) {
+          .hero-btns a {
+            flex: 1 1 0 !important;
+            text-align: center !important;
+            padding: 12px 12px !important;
+            font-size: 14px !important;
+          }
           section {
             display: flex !important;
             flex-direction: column !important;
