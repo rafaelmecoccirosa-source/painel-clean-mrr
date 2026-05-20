@@ -56,6 +56,13 @@ export default function Header({
   const [profileOpen, setProfileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifs, setNotifs]         = useState<Notification[]>([]);
+  const [isMobile, setIsMobile]     = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, []);
   const pathname  = usePathname();
   const router    = useRouter();
   const notifRef  = useRef<HTMLDivElement>(null);
@@ -127,7 +134,7 @@ export default function Header({
     >
       <div className="pc-mobile-h-pad-tight" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/cliente/home" style={{ textDecoration: 'none' }}>
-          <CleanPassLogo variant="light" size={40} showWordmark={true} />
+          <CleanPassLogo variant="light" size={isMobile ? 32 : 40} showWordmark={true} />
         </Link>
 
         <nav className="pc-mobile-hidden" style={{ display: 'flex', gap: 2 }}>

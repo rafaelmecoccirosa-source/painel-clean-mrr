@@ -12,10 +12,20 @@ export default function SolarAnimation() {
     const H = container.offsetHeight
     if (W === 0 || H === 0) return
 
+    const isMobile = W < 640
+
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(45, W/H, 1, 10000)
-    camera.position.set(-500, 420, 600)
-    camera.lookAt(200, 20, -40)
+    camera.position.set(
+      isMobile ? 800 : 160,
+      isMobile ? 458 : 221,
+      isMobile ? 518 : 574
+    )
+    camera.lookAt(
+      isMobile ? -730 : -408,
+      isMobile ? 153 : -200,
+      -40
+    )
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -156,13 +166,20 @@ export default function SolarAnimation() {
     // DEBUG PANEL — remover após ajuste
     const panel = document.createElement('div')
     panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:16px;border-radius:8px;z-index:9999;font-family:monospace;font-size:12px;width:280px'
+    const defX  = isMobile ? 800  : 160
+    const defY  = isMobile ? 458  : 221
+    const defZ  = isMobile ? 518  : 574
+    const defTX = isMobile ? -730 : -408
+    const defTY = isMobile ? 153  : -200
+
     panel.innerHTML = `
-  <div>camX: <input id="dbgX" type="range" min="-800" max="800" value="-500" style="width:140px"> <span id="dbgXv">-500</span></div>
-  <div>camY: <input id="dbgY" type="range" min="100" max="800" value="420" style="width:140px"> <span id="dbgYv">420</span></div>
-  <div>camZ: <input id="dbgZ" type="range" min="200" max="1200" value="600" style="width:140px"> <span id="dbgZv">600</span></div>
-  <div>tgtX: <input id="dbgTX" type="range" min="-800" max="800" value="200" style="width:140px"> <span id="dbgTXv">200</span></div>
-  <div>tgtY: <input id="dbgTY" type="range" min="-200" max="200" value="20" style="width:140px"> <span id="dbgTYv">20</span></div>
-  <div id="dbgVals" style="margin-top:8px;color:#3DC45A"></div>
+  <div style="font-size:10px;color:#aaa;margin-bottom:6px">${isMobile ? '📱 MOBILE' : '🖥 DESKTOP'}</div>
+  <div>camX: <input id="dbgX" type="range" min="-800" max="800" value="${defX}" style="width:140px"> <span id="dbgXv">${defX}</span></div>
+  <div>camY: <input id="dbgY" type="range" min="100" max="800" value="${defY}" style="width:140px"> <span id="dbgYv">${defY}</span></div>
+  <div>camZ: <input id="dbgZ" type="range" min="200" max="1200" value="${defZ}" style="width:140px"> <span id="dbgZv">${defZ}</span></div>
+  <div>tgtX: <input id="dbgTX" type="range" min="-800" max="800" value="${defTX}" style="width:140px"> <span id="dbgTXv">${defTX}</span></div>
+  <div>tgtY: <input id="dbgTY" type="range" min="-200" max="200" value="${defTY}" style="width:140px"> <span id="dbgTYv">${defTY}</span></div>
+  <div id="dbgVals" style="margin-top:8px;color:#3DC45A;white-space:pre"></div>
 `
     document.body.appendChild(panel)
 

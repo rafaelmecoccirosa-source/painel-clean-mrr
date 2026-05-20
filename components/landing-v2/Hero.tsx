@@ -6,7 +6,7 @@ const SolarAnimation = dynamic(() => import('./SolarAnimation'), { ssr: false })
 export default function Hero() {
   return (
     <section style={{
-      minHeight: '100vh',
+      minHeight: 'calc(100vh - 80px)',
       background: '#0B2D1E',
       position: 'relative',
       overflow: 'hidden',
@@ -55,7 +55,8 @@ export default function Hero() {
         paddingLeft: 'max(32px, calc((100vw - 1280px) / 2 + 32px))',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: 'clamp(60px, 8vh, 100px)',
         zIndex: 4,
       }}>
         {/* Badges */}
@@ -182,11 +183,18 @@ export default function Hero() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @media (max-width: 640px) {
+          section {
+            min-height: auto !important;
+          }
+          section > div:nth-child(3) {
+            position: relative !important;
+            height: 220px !important;
+          }
           section > div:nth-child(4) {
             position: relative !important;
             width: 100% !important;
-            padding: 60px 24px 40px !important;
-            min-height: 100vh;
+            padding: 24px 24px 40px !important;
+            min-height: auto !important;
           }
         }
       `}</style>
