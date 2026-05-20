@@ -14,8 +14,8 @@ export default function SolarAnimation() {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(45, W/H, 1, 10000)
-    camera.position.set(120, 400, 600)
-    camera.lookAt(280, 10, -50)
+    camera.position.set(-120, 400, 600)
+    camera.lookAt(-280, 10, -50)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
