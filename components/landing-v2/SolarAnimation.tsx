@@ -127,6 +127,8 @@ export default function SolarAnimation() {
           const newH=bar.mesh.scale.z+(BASE_H-bar.mesh.scale.z)*0.06
           bar.mesh.scale.z=newH
           bar.mesh.position.y=newH/2
+          const em=bar.baseEmis.clone().lerp(bar.baseCol,bar.lit*0.5)
+          ;(bar.mesh.material as THREE.MeshPhongMaterial).emissive.copy(em)
         }
         renderer.render(scene,camera)
         return
