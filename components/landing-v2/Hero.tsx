@@ -6,7 +6,7 @@ const SolarAnimation = dynamic(() => import('./SolarAnimation'), { ssr: false })
 export default function Hero() {
   return (
     <section style={{
-      minHeight: '85vh',
+      minHeight: '75vh',
       background: '#0B2D1E',
       position: 'relative',
       overflow: 'hidden',
@@ -184,17 +184,23 @@ export default function Hero() {
         }
         @media (max-width: 640px) {
           section {
+            display: flex !important;
+            flex-direction: column !important;
             min-height: auto !important;
           }
           section > div:nth-child(3) {
             position: relative !important;
+            width: 100% !important;
             height: 260px !important;
+            order: 2;
+            inset: unset !important;
           }
           section > div:nth-child(4) {
             position: relative !important;
             width: 100% !important;
-            padding: 24px 24px 40px !important;
+            padding: 60px 24px 24px !important;
             min-height: auto !important;
+            order: 1;
           }
         }
       `}</style>
