@@ -153,6 +153,40 @@ export default function SolarAnimation() {
 
     animId=requestAnimationFrame(animate)
 
+    // DEBUG PANEL — remover após ajuste
+    const panel = document.createElement('div')
+    panel.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:16px;border-radius:8px;z-index:9999;font-family:monospace;font-size:12px;width:280px'
+    panel.innerHTML = `
+  <div>camX: <input id="dbgX" type="range" min="-800" max="800" value="-500" style="width:140px"> <span id="dbgXv">-500</span></div>
+  <div>camY: <input id="dbgY" type="range" min="100" max="800" value="420" style="width:140px"> <span id="dbgYv">420</span></div>
+  <div>camZ: <input id="dbgZ" type="range" min="200" max="1200" value="600" style="width:140px"> <span id="dbgZv">600</span></div>
+  <div>tgtX: <input id="dbgTX" type="range" min="-800" max="800" value="200" style="width:140px"> <span id="dbgTXv">200</span></div>
+  <div>tgtY: <input id="dbgTY" type="range" min="-200" max="200" value="20" style="width:140px"> <span id="dbgTYv">20</span></div>
+  <div id="dbgVals" style="margin-top:8px;color:#3DC45A"></div>
+`
+    document.body.appendChild(panel)
+
+    const update = () => {
+      const x = +(document.getElementById('dbgX') as HTMLInputElement).value
+      const y = +(document.getElementById('dbgY') as HTMLInputElement).value
+      const z = +(document.getElementById('dbgZ') as HTMLInputElement).value
+      const tx = +(document.getElementById('dbgTX') as HTMLInputElement).value
+      const ty = +(document.getElementById('dbgTY') as HTMLInputElement).value
+      ;(document.getElementById('dbgXv') as HTMLElement).textContent = String(x)
+      ;(document.getElementById('dbgYv') as HTMLElement).textContent = String(y)
+      ;(document.getElementById('dbgZv') as HTMLElement).textContent = String(z)
+      ;(document.getElementById('dbgTXv') as HTMLElement).textContent = String(tx)
+      ;(document.getElementById('dbgTYv') as HTMLElement).textContent = String(ty)
+      ;(document.getElementById('dbgVals') as HTMLElement).textContent = `set(${x},${y},${z})\nlookAt(${tx},${ty},-40)`
+      camera.position.set(x, y, z)
+      camera.lookAt(tx, ty, -40)
+    }
+    ;['dbgX','dbgY','dbgZ','dbgTX','dbgTY'].forEach(id =>
+      (document.getElementById(id) as HTMLInputElement).addEventListener('input', update)
+    )
+    update()
+    // END DEBUG PANEL
+
     const ro=new ResizeObserver(()=>{
       const W2=container.offsetWidth, H2=container.offsetHeight
       camera.aspect=W2/H2; camera.updateProjectionMatrix()

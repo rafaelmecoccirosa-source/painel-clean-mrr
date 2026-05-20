@@ -1,7 +1,8 @@
 import Image from 'next/image'
 
-// PNG original: 1086×263 → aspect ratio ≈ 4.13
-const LOGO_ASPECT = 1086 / 263
+// ícone: 260×236 | tipo: 769×129
+const ICON_ASPECT = 260 / 236
+const TYPE_ASPECT = 769 / 129
 
 interface Props {
   size?: number
@@ -15,23 +16,31 @@ export default function CleanPassLogo({
   variant = 'light',
   showTagline = false,
 }: Props) {
-  const src = variant === 'dark'
-    ? '/logo-cleanpass-negativo.png'
-    : '/logo-cleanpass-normal.png'
-
-  const h = size
-  const w = Math.round(size * LOGO_ASPECT)
+  const iconH = size
+  const iconW = Math.round(size * ICON_ASPECT)
+  const typeH = Math.round(size * 0.55)
+  const typeW = Math.round(typeH * TYPE_ASPECT)
 
   return (
     <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <Image
-        src={src}
-        alt="CleanPass logo"
-        width={w}
-        height={h}
-        style={{ display: 'block', width: w, height: h }}
-        priority
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: Math.round(size * 0.22) }}>
+        <Image
+          src="/logo-cleanpass-icone.png"
+          alt=""
+          width={iconW}
+          height={iconH}
+          style={{ display: 'block', width: iconW, height: iconH }}
+          priority
+        />
+        <Image
+          src="/logo-cleanpass-type.png"
+          alt="CleanPass"
+          width={typeW}
+          height={typeH}
+          style={{ display: 'block', width: typeW, height: typeH, filter: variant === 'dark' ? 'invert(1)' : 'none' }}
+          priority
+        />
+      </div>
       {showTagline && (
         <p style={{
           fontSize: 11,
