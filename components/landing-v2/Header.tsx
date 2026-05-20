@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Button, COLORS, LogoLockup } from './shared';
 
@@ -75,7 +76,10 @@ export default function Header() {
           }}
         >
           <a href="#top" style={{ textDecoration: 'none' }}>
-            <LogoLockup showTagline={!isMobile} />
+            {isMobile
+              ? <Image src="/logo-cleanpass-icone.png" width={36} height={36} alt="CleanPass" priority />
+              : <LogoLockup showTagline={false} />
+            }
           </a>
 
           {!isMobile && (

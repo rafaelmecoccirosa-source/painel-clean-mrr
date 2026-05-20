@@ -193,9 +193,9 @@ export default function Hero() {
             position: relative !important;
             inset: unset !important;
             width: 100% !important;
-            height: 260px !important;
+            height: 280px !important;
             order: 2 !important;
-            margin-top: -80px !important;
+            margin-top: 0 !important;
           }
           section > div:nth-child(4) {
             position: relative !important;
@@ -204,7 +204,7 @@ export default function Hero() {
             top: unset !important;
             bottom: unset !important;
             width: 100% !important;
-            padding: 60px 24px 24px !important;
+            padding: 60px 24px 0 !important;
             min-height: auto !important;
             order: 1 !important;
           }
