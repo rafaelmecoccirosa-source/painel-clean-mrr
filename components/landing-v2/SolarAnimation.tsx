@@ -23,7 +23,7 @@ export default function SolarAnimation() {
     )
     camera.lookAt(
       isMobile ? -356 : -408,
-      isMobile ? -200 : -200,
+      isMobile ?   20 : -200,
       -40
     )
 
@@ -172,7 +172,7 @@ export default function SolarAnimation() {
     const defY  = isMobile ?  131 : 221
     const defZ  = isMobile ?  260 : 574
     const defTX = isMobile ? -356 : -408
-    const defTY = isMobile ? -200 : -200
+    const defTY = isMobile ?   20 : -200
 
     panel.innerHTML = `
   <div style="font-size:10px;color:#aaa;margin-bottom:6px">${isMobile ? '📱 MOBILE' : '🖥 DESKTOP'}</div>
