@@ -78,7 +78,7 @@ export default function Header() {
           <a href="#top" style={{ textDecoration: 'none' }}>
             {isMobile
               ? <Image src="/logo-cleanpass-icone.png" width={36} height={36} alt="CleanPass" priority />
-              : <LogoLockup showTagline={false} />
+              : <LogoLockup showTagline={true} />
             }
           </a>
 

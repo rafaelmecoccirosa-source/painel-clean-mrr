@@ -15,7 +15,7 @@ export default function SolarAnimation() {
     const isMobile = W < 640
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(45, W/H, 1, 10000)
+    const camera = new THREE.PerspectiveCamera(isMobile ? 65 : 45, W/H, 1, 10000)
     camera.position.set(
       isMobile ? 199 : 160,
       isMobile ? 131 : 221,

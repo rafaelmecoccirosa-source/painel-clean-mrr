@@ -76,7 +76,7 @@ export default function Hero() {
             fontSize: 12,
             padding: '5px 14px',
             borderRadius: 100,
-          }}>🇧🇷 SC · Feito em Santa Catarina</span>
+          }}><span style={{fontFamily:'Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif'}}>🇧🇷</span> SC · Feito em Santa Catarina</span>
         </div>
 
         <h1 style={{
@@ -199,7 +199,7 @@ export default function Hero() {
             position: relative !important;
             inset: unset !important;
             width: 100% !important;
-            height: 280px !important;
+            height: 320px !important;
             order: 2 !important;
             margin-top: 0 !important;
           }
