@@ -7,6 +7,8 @@ import { Bell, Menu, X } from 'lucide-react';
 import { COLORS } from '@/components/landing-v2/shared';
 import { createClient } from '@/lib/supabase/client';
 import { initialsOf } from '@/lib/mock-cliente';
+import CleanPassLogo from '@/components/ui/CleanPassLogo';
+import Image from 'next/image';
 
 type NavItem = { href: string; label: string };
 
@@ -55,6 +57,13 @@ export default function Header({
   const [profileOpen, setProfileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifs, setNotifs]         = useState<Notification[]>([]);
+  const [isMobile, setIsMobile]     = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, []);
   const pathname  = usePathname();
   const router    = useRouter();
   const notifRef  = useRef<HTMLDivElement>(null);
@@ -125,17 +134,11 @@ export default function Header({
       }}
     >
       <div className="pc-mobile-h-pad-tight" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/cliente/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 11 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/landing-v2-logo-mark.jpg" alt="Painel Clean" style={{ width: 38, height: 38, borderRadius: 9, objectFit: 'cover' }} />
-          <div style={{ lineHeight: 1 }}>
-            <div style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 19, letterSpacing: '-.02em', color: COLORS.dark }}>
-              Painel <span style={{ color: COLORS.green }}>Clean</span>
-            </div>
-            <div className="pc-mobile-hidden" style={{ fontSize: 12, marginTop: 4, color: COLORS.muted, fontWeight: 500, fontFamily: "'Open Sans',sans-serif", letterSpacing: '.02em' }}>
-              Limpeza e monitoramento solar
-            </div>
-          </div>
+        <Link href="/cliente/home" style={{ textDecoration: 'none' }}>
+          {isMobile
+            ? <Image src="/logo-cleanpass-icone.png" height={36} width={36} alt="CleanPass" priority />
+            : <CleanPassLogo variant="light" size={40} showWordmark={true} />
+          }
         </Link>
 
         <nav className="pc-mobile-hidden" style={{ display: 'flex', gap: 2 }}>

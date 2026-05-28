@@ -149,7 +149,7 @@ export default function Payback() {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 14,
-                transition: 'all .25s ease',
+                transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                 animation: `pc-slideup .6s ${i * 0.08}s ease both`,
               }}
               onMouseEnter={(e) => {

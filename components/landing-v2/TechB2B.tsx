@@ -33,7 +33,7 @@ export default function TechB2B() {
     },
     {
       icon: '🛠',
-      title: 'Ecossistema Painel Clean',
+      title: 'Ecossistema CleanPass',
       body: 'App com checklist, captura de fotos, assinatura digital e suporte. Você foca no serviço.',
     },
   ];
@@ -80,7 +80,7 @@ export default function TechB2B() {
                 border: '1px solid rgba(61,196,90,0.2)',
                 borderRadius: 16,
                 padding: isMobile ? 22 : 28,
-                transition: 'all .25s',
+                transition: 'transform 250ms cubic-bezier(0.23,1,0.32,1), box-shadow 250ms ease',
                 animation: `pc-slideup .5s ${i * 0.06}s ease both`,
               }}
               onMouseEnter={(e) => {

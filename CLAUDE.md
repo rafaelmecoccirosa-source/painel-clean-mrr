@@ -1,12 +1,12 @@
-# CLAUDE.md — Painel Clean Plataforma v2
+# CLAUDE.md — Painel Clean MRR
 
-> ⚠️ **REPO ATIVO DE TRABALHO:** github.com/rafaelmecoccirosa-source/painel-clean-v2
+> ⚠️ **REPO ATIVO DE TRABALHO:** github.com/rafaelmecoccirosa-source/painel-clean-mrr
 > Todas as implementações vão aqui. A v1 (painel-clean-plataforma) é só referência histórica — nunca editar.
 
 > Contexto completo do projeto para o Claude Code.
-> Atualizado em: 2026-04-22
+> Atualizado em: 2026-05-15
 > Leia este arquivo inteiro antes de qualquer implementação.
-> **Esta é a v2 — modelo assinatura (Netflix). A v1 está em github.com/rafaelmecoccirosa-source/painel-clean-plataforma**
+> **Este é o repo MRR — modelo assinatura (Netflix). A v1 está em github.com/rafaelmecoccirosa-source/painel-clean-plataforma**
 
 ---
 
@@ -14,8 +14,8 @@
 
 Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netflix)** com serviço avulso como opção secundária. Conecta **donos de painéis solares** com **técnicos certificados** em um corredor de 13 cidades entre Jaraguá do Sul e Florianópolis (SC).
 
-**App v2:** painel-clean-v2.vercel.app
-**Repo v2:** github.com/rafaelmecoccirosa-source/painel-clean-v2
+**App (produção):** painel-clean-mrr.vercel.app
+**Repo:** github.com/rafaelmecoccirosa-source/painel-clean-mrr
 **App v1 (referência):** painel-clean-plataforma.vercel.app
 
 ---
@@ -185,7 +185,7 @@ Faixa regressiva por quantidade de módulos:
 ### Comissão técnico (NÃO mostrar na landing nem dashboard cliente)
 - Plataforma: 25% | Técnico (repasse): 75%
 
-### Calculadora de perda (landing /v2)
+### Calculadora de perda (landing MRR)
 ```typescript
 W_PER_MODULE = 550
 KWH_PER_KWP_MONTH = 130   // média SC
@@ -447,13 +447,13 @@ redirect('/admin')
 
 ---
 
-## Landing page — estratégia de rotas
+## Landing page — estrutura de rotas
 
-- `app/page.tsx` — landing atual em `/` — **NÃO ALTERAR**
-- `app/v2/page.tsx` — nova landing em `/v2` — referência visual aprovada
-- `components/landing-v2/` — componentes da nova landing
+- `app/page.tsx` — landing MRR (home atual) — componentes de `components/landing-v2/`
+- `app/v2/page.tsx` — rota `/v2` ainda existe como alias/referência
+- `app/old/page.tsx` — landing antiga em `/old` (histórico)
+- `components/landing-v2/` — componentes da landing MRR
 - **`'use client'` obrigatório** em todo componente com hooks ou event handlers
-- Após aprovação final: `/v2` → `/`, atual → `/v1`
 
 ---
 
@@ -509,11 +509,11 @@ COMMISSION_TECNICO = 0.75
 - [ ] Leaflet importado só dentro de useEffect
 - [ ] RLS admin usando `auth.jwt()` — nunca subquery em profiles
 - [ ] `'use client'` nos componentes que usam hooks
-- [ ] Rotas públicas (`/`, `/v2`) não bloqueadas pelo middleware
+- [ ] Rotas públicas (`/`, `/v2`, `/old`) não bloqueadas pelo middleware
 - [ ] Commits cirúrgicos sem CRLF churn
 - [ ] Tagline correta: "Limpeza e Cuidado para Usinas Solares"
 - [ ] Menu cliente na ordem: Início · Relatórios · Histórico · Solicitar Limpeza · Indicações · Perfil
-- [ ] Partículas usando canvas-based de `components/landing-v2/shared.tsx`
+- [ ] Partículas usando canvas-based de `components/landing-v2/shared.tsx` (landing MRR)
 - [ ] Animações fade-up nas seções (classes do globals.css)
 - [ ] Relatório de limpeza (`service_reports`) preenchido pelo técnico antes de concluir serviço
 - [ ] Relatório mensal (`monthly_reports`) distinto do relatório de limpeza
