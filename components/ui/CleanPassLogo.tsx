@@ -37,7 +37,7 @@ export default function CleanPassLogo({
           alt="CleanPass"
           width={typeW}
           height={typeH}
-          style={{ display: 'block', width: typeW, height: typeH, filter: variant === 'dark' ? 'invert(1)' : 'none' }}
+          style={{ display: 'block', width: typeW, height: typeH, filter: variant === 'dark' ? 'brightness(0) invert(1)' : 'none' }}
           priority
         />
       </div>
