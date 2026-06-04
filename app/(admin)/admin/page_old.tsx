@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Users, DollarSign, Clock, Activity, Wifi } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import AdminReceitaChart from "@/components/admin/AdminReceitaChart";
 import AdminDonut from "@/components/admin/AdminDonut";
 import AdminTecnicosAba from "@/components/admin/AdminTecnicosAba";
@@ -109,39 +109,44 @@ export default async function AdminDashboardPage() {
 
   const kpis = [
     {
-      icon: <Users size={20} className="text-brand-green" />,
+      emoji: "📅",
       label: "Assinaturas ativas",
       value: String(assinaturasAtivas),
-      sub: "status=active",
-      accent: false,
+      trend: null,
+      up: true,
+      sub: "subscriptions status=active",
     },
     {
-      icon: <DollarSign size={20} className="text-brand-green" />,
+      emoji: "💰",
       label: "MRR",
       value: fmt(mrr),
+      trend: null,
+      up: true,
       sub: "receita recorrente mensal",
-      accent: true,
     },
     {
-      icon: <Clock size={20} className="text-amber-500" />,
+      emoji: "⏳",
       label: "Pendentes",
       value: String(pendentesCount),
+      trend: null,
+      up: false,
       sub: "sem técnico designado",
-      accent: false,
     },
     {
-      icon: <Activity size={20} className="text-blue-500" />,
+      emoji: "🔄",
       label: "Em andamento",
       value: String(andamentoCount),
+      trend: null,
+      up: true,
       sub: "aceitos + in_progress",
-      accent: false,
     },
     {
-      icon: <Wifi size={20} className="text-brand-green" />,
+      emoji: "👥",
       label: "Técnicos online",
       value: String(tecnicosOnline),
+      trend: null,
+      up: true,
       sub: "last_seen ≤ 5 min",
-      accent: false,
     },
   ];
 
@@ -171,13 +176,12 @@ export default async function AdminDashboardPage() {
     <div className="page-container space-y-6">
 
       {/* ── Header ── */}
-      <div className="fade-up">
-        <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Centro de operações</p>
-        <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">
-          Painel Administrativo
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-brand-dark">
+          🛠️ Painel Administrativo
         </h1>
         <p className="text-brand-muted text-sm mt-1">
-          Painel Clean · {mesAtual} {anoAtual}
+          Painel Clean · visão geral da plataforma — {mesAtual} {anoAtual}
         </p>
         <span className="inline-block mt-1 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
           ✅ Dados reais · service role
@@ -249,30 +253,31 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* ── Seção 1: KPIs ── */}
-      <div className="fade-up fade-up-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {kpis.map(({ icon, label, value, sub, accent }) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {kpis.map(({ emoji, label, value, trend, up, sub }) => (
           <div
             key={label}
-            className={`rounded-2xl p-4 flex flex-col gap-3 shadow-sm border ${
-              accent
-                ? "bg-brand-dark border-brand-dark"
-                : "bg-white border-brand-border"
-            }`}
+            className="bg-white border border-brand-border rounded-2xl p-4 flex flex-col gap-2 shadow-sm"
           >
-            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
-              accent ? "bg-white/10" : "bg-brand-green/10"
-            }`}>
-              {icon}
-            </div>
-            <div>
-              <p className={`font-heading text-2xl font-extrabold leading-tight ${
-                accent ? "text-white" : "text-brand-dark"
-              }`}>
+            <span className="text-2xl leading-none">{emoji}</span>
+            <div className="mt-1">
+              <p className="font-heading text-[22px] font-bold text-brand-dark leading-tight">
                 {value}
               </p>
-              <p className={`text-xs mt-0.5 ${accent ? "text-white/60" : "text-brand-muted"}`}>{label}</p>
-              <p className={`text-[10px] mt-0.5 ${accent ? "text-white/40" : "text-brand-muted"}`}>{sub}</p>
+              <p className="text-xs text-brand-muted mt-0.5">{label}</p>
             </div>
+            {trend ? (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span
+                  className={`text-[11px] font-bold ${up ? "text-emerald-600" : "text-red-500"}`}
+                >
+                  {up ? "↑" : "↓"} {trend}
+                </span>
+                <span className="text-[10px] text-brand-muted">{sub}</span>
+              </div>
+            ) : (
+              <p className="text-[10px] text-brand-muted">{sub}</p>
+            )}
           </div>
         ))}
       </div>

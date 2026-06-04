@@ -103,8 +103,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
           <ArrowLeft size={18} />
         </Link>
         <div className="flex-1">
-          <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Gestão</p>
-          <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">Serviços</h1>
+          <h1 className="font-heading text-2xl font-bold text-brand-dark">📋 Serviços</h1>
           <p className="text-brand-muted text-sm mt-0.5">Todos os serviços da plataforma</p>
         </div>
       </div>

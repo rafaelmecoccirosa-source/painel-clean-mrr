@@ -262,8 +262,7 @@ export default function PagamentosAdminPage() {
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Financeiro</p>
-          <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">Pagamentos</h1>
+          <h1 className="font-heading text-2xl font-bold text-brand-dark">💰 Pagamentos</h1>
           <p className="text-brand-muted text-sm mt-0.5">
             Confirme pagamentos PIX e libere repasses aos técnicos
           </p>

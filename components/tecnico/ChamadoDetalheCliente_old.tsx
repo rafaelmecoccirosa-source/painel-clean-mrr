@@ -571,8 +571,7 @@ export default function ChamadoDetalheCliente({ id }: Props) {
       {toast && <Toast key={toast.key} message={toast.message} type={toast.type} onClose={hideToast} />}
 
       <div className="mb-2">
-        <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Chamado</p>
-        <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">Detalhe do chamado</h1>
+        <h1 className="font-heading text-2xl font-bold text-brand-dark">Detalhe do chamado</h1>
         <p className="text-brand-muted text-sm mt-1">
           {city} · {module_count} placas · #{id.slice(0, 8).toUpperCase()}
         </p>

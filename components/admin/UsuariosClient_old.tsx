@@ -176,9 +176,8 @@ export default function UsuariosClient({ profiles, hasError }: Props) {
           <ArrowLeft size={18} />
         </Link>
         <div className="flex-1">
-          <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Gestão</p>
           <div className="flex items-center gap-2">
-            <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">Usuários</h1>
+            <h1 className="font-heading text-2xl font-bold text-brand-dark">👥 Usuários</h1>
             {hasError && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                 📊 Dados demonstrativos
