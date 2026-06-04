@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, DollarSign, Briefcase, Star, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import DisponibilidadeToggle from "@/components/tecnico/DisponibilidadeToggle";
 import GanhosChart from "@/components/tecnico/GanhosChart";
 import { MOCK_TECNICO } from "@/lib/mock-data";
@@ -29,6 +29,7 @@ export default async function TecnicoDashboardPage() {
 
   const admin = createServiceClient();
 
+  // ── Profile ──────────────────────────────────────────────────────────────
   const { data: profile } = await admin
     .from("profiles")
     .select("full_name, lat, city")
@@ -39,22 +40,29 @@ export default async function TecnicoDashboardPage() {
   const hasLocation = profile?.lat != null;
   const techCity = profile?.city ?? null;
 
+  // ── Month boundaries ──────────────────────────────────────────────────────
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
 
+  // ── Parallel queries ───────────────────────────────────────────────────────
   const [completedMonthRes, completedAllRes, proximosRes, disponiveisRes, historicoRes] =
     await Promise.all([
+      // Ganhos do mês: completed this month
       admin
         .from("service_requests")
         .select("price_estimate")
         .eq("technician_id", user.id)
         .eq("status", "completed")
         .gte("preferred_date", firstOfMonth),
+
+      // Total completed all time
       admin
         .from("service_requests")
         .select("id", { count: "exact", head: true })
         .eq("technician_id", user.id)
         .eq("status", "completed"),
+
+      // Próximos chamados confirmados (aceitos por mim)
       admin
         .from("service_requests")
         .select("id, city, address, module_count, price_estimate, preferred_date, preferred_time, client_id")
@@ -62,6 +70,8 @@ export default async function TecnicoDashboardPage() {
         .in("status", ["accepted", "in_progress"])
         .order("preferred_date", { ascending: true })
         .limit(3),
+
+      // Chamados disponíveis na minha cidade
       techCity
         ? admin
             .from("service_requests")
@@ -72,6 +82,8 @@ export default async function TecnicoDashboardPage() {
             .order("created_at", { ascending: true })
             .limit(3)
         : Promise.resolve({ data: [] as any[] }),
+
+      // Últimos 5 serviços concluídos para historico
       admin
         .from("service_requests")
         .select("id, city, module_count, price_estimate, preferred_date, client_id")
@@ -95,6 +107,7 @@ export default async function TecnicoDashboardPage() {
     cidade:   s.city ?? "—",
     modulos:  s.module_count ?? 0,
     recebido: Math.round((s.price_estimate ?? 0) * 0.75),
+    nota:     null as number | null,
   }));
 
   const mesAtual = now.toLocaleString("pt-BR", { month: "long" });
@@ -103,27 +116,35 @@ export default async function TecnicoDashboardPage() {
 
   const resumo = [
     {
-      icon: <DollarSign size={20} className="text-brand-green" />,
+      emoji: "💰",
       label: "Ganhos do mês",
       value: fmt(ganhosMes),
+      trend: null,
+      up: true,
       sub: `${mesCapitalized} · repasse 75%`,
     },
     {
-      icon: <Briefcase size={20} className="text-brand-green" />,
+      emoji: "📋",
       label: "Serviços realizados",
       value: String(servicosMes),
+      trend: null,
+      up: true,
       sub: `${mesCapitalized} · ${totalServicos} total`,
     },
     {
-      icon: <Star size={20} className="text-brand-green" />,
+      emoji: "⭐",
       label: "Avaliação média",
       value: MOCK_TECNICO.avaliacaoMedia.toFixed(1),
+      trend: null,
+      up: true,
       sub: "últimos 30 dias",
     },
     {
-      icon: <Clock size={20} className="text-brand-green" />,
+      emoji: "⏱️",
       label: "Tempo médio",
       value: `${MOCK_TECNICO.tempoMedio}h`,
+      trend: null,
+      up: true,
       sub: "por serviço",
     },
   ];
@@ -133,68 +154,73 @@ export default async function TecnicoDashboardPage() {
   return (
     <div className="page-container space-y-6">
 
-      {/* Header */}
-      <div className="fade-up flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">
-            {mesCapitalized} {anoAtual} · {techCity ?? "configure sua cidade"}
-          </p>
-          <h1 className="font-heading text-3xl font-extrabold text-brand-dark leading-tight">
+          <h1 className="font-heading text-2xl font-bold text-brand-dark">
             Olá, {userName}! 👋
           </h1>
-          <p className="text-brand-muted text-sm mt-1">
-            {disponiveis.length > 0
-              ? `${disponiveis.length} chamado${disponiveis.length !== 1 ? "s" : ""} disponíve${disponiveis.length !== 1 ? "is" : "l"} agora.`
-              : "Aguardando chamados na sua região."}
+          <p className="text-brand-muted text-sm mt-0.5">
+            {mesCapitalized} {anoAtual} · {techCity ?? "configure sua cidade"}
           </p>
         </div>
         <DisponibilidadeToggle cidade={techCity ? `${techCity}, SC` : "—"} />
       </div>
 
-      {/* Banners */}
-      <div className="fade-up fade-up-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {!SUBSCRIPTION_ENABLED && (
-          <div className="flex items-start gap-3 bg-brand-light border border-brand-border rounded-2xl px-4 py-3.5">
-            <span className="text-2xl flex-shrink-0">💰</span>
-            <div>
-              <p className="text-sm font-bold text-brand-dark">Sem mensalidade — apenas 25% de comissão</p>
-              <p className="text-xs text-brand-muted mt-0.5">Ex: serviço de R$ 600 → você recebe R$ 450 via PIX.</p>
-            </div>
-          </div>
-        )}
-        <div className="flex items-start gap-3 bg-white border border-brand-border rounded-2xl px-4 py-3.5">
-          <span className="text-2xl flex-shrink-0">🛡️</span>
+      {/* ── Banner sem mensalidade ── */}
+      {!SUBSCRIPTION_ENABLED && (
+        <div className="flex items-start gap-3 bg-brand-light border border-brand-border rounded-2xl px-4 py-3.5">
+          <span className="text-2xl flex-shrink-0">💰</span>
           <div>
-            <p className="text-sm font-bold text-brand-dark">Seguro contra danos — todos os serviços</p>
-            <p className="text-xs text-brand-muted mt-0.5">Cobertura contra danos acidentais durante a limpeza.</p>
+            <p className="text-sm font-bold text-brand-dark">
+              ✅ Sem mensalidade — apenas 25% de comissão por serviço realizado
+            </p>
+            <p className="text-xs text-brand-muted mt-0.5">
+              Exemplo: num serviço de R$ 600, você recebe R$ 450 via PIX automático.
+            </p>
           </div>
+        </div>
+      )}
+
+      {/* ── Banner seguro ── */}
+      <div className="flex items-start gap-3 bg-white border border-brand-border rounded-2xl px-4 py-3.5">
+        <span className="text-2xl flex-shrink-0">🛡️</span>
+        <div>
+          <p className="text-sm font-bold text-brand-dark">Seguro contra danos — todos os serviços</p>
+          <p className="text-xs text-brand-muted mt-0.5">
+            Todos os serviços realizados pela plataforma incluem cobertura contra danos acidentais durante a limpeza.
+          </p>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="fade-up fade-up-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {resumo.map(({ icon, label, value, sub }) => (
-          <div key={label} className="card flex flex-col gap-3">
-            <div className="h-10 w-10 rounded-xl bg-brand-green/10 flex items-center justify-center">
-              {icon}
-            </div>
-            <div>
-              <p className="font-heading text-2xl font-extrabold text-brand-dark leading-tight">{value}</p>
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {resumo.map(({ emoji, label, value, trend, up, sub }) => (
+          <div key={label} className="bg-white border border-brand-border rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
+            <span className="text-2xl leading-none">{emoji}</span>
+            <div className="mt-1">
+              <p className="font-heading text-[22px] font-bold text-brand-dark leading-tight">{value}</p>
               <p className="text-xs text-brand-muted mt-0.5">{label}</p>
-              <p className="text-[10px] text-brand-muted mt-0.5">{sub}</p>
             </div>
+            {trend ? (
+              <div className="flex items-center gap-1">
+                <span className={`text-[11px] font-bold flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-red-500"}`}>
+                  {up ? "↑" : "↓"} {trend}
+                </span>
+                <span className="text-[10px] text-brand-muted">{sub}</span>
+              </div>
+            ) : (
+              <p className="text-[10px] text-brand-muted">{sub}</p>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Próximos chamados */}
+      {/* ── Próximos chamados confirmados ── */}
       {proximos.length > 0 && (
-        <div className="fade-up fade-up-3">
+        <div>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-heading font-bold text-brand-dark text-lg">📅 Próximos serviços</h2>
-              <p className="text-xs text-brand-muted mt-0.5">{proximos.length} agendado{proximos.length !== 1 ? "s" : ""}</p>
-            </div>
+            <h2 className="font-heading font-bold text-brand-dark text-base">📅 Próximos chamados</h2>
             <Link href="/tecnico/chamados" className="text-xs text-brand-green font-semibold hover:underline flex items-center gap-1">
               Ver todos <ArrowRight size={12} />
             </Link>
@@ -222,13 +248,10 @@ export default async function TecnicoDashboardPage() {
         </div>
       )}
 
-      {/* Chamados disponíveis */}
-      <div className="fade-up fade-up-3">
+      {/* ── Chamados disponíveis na cidade ── */}
+      <div>
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-heading font-bold text-brand-dark text-lg">🔔 Chamados disponíveis</h2>
-            <p className="text-xs text-brand-muted mt-0.5">Na sua região</p>
-          </div>
+          <h2 className="font-heading font-bold text-brand-dark text-base">🔔 Chamados disponíveis</h2>
           <Link href="/tecnico/chamados" className="text-xs text-brand-green font-semibold hover:underline flex items-center gap-1">
             Ver todos <ArrowRight size={12} />
           </Link>
@@ -249,8 +272,9 @@ export default async function TecnicoDashboardPage() {
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-muted">
                     <span>📅 {c.preferred_date ? fmtDate(c.preferred_date) : "—"} · {c.preferred_time ?? "—"}</span>
                     <span>🔋 {c.module_count ?? 0} módulos</span>
-                    <span className="text-brand-green font-semibold">
-                      💰 {fmt((c.price_estimate ?? 0) * 0.75)} repasse
+                    <span>
+                      💰 {fmt(c.price_estimate ?? 0)}{" "}
+                      <span className="text-brand-green font-semibold">(repasse: {fmt((c.price_estimate ?? 0) * 0.75)})</span>
                     </span>
                   </div>
                 </div>
@@ -266,9 +290,9 @@ export default async function TecnicoDashboardPage() {
         )}
       </div>
 
-      {/* Banner: completar perfil */}
+      {/* ── Banner: completar perfil ── */}
       {!hasLocation && (
-        <div className="fade-up bg-brand-light border border-brand-border rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-brand-light border border-brand-border rounded-xl p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-brand-dark">Complete seu perfil</p>
             <p className="text-xs text-brand-muted mt-0.5">Informe seu CEP para aparecer no mapa de cobertura</p>
@@ -279,9 +303,9 @@ export default async function TecnicoDashboardPage() {
         </div>
       )}
 
-      {/* Ranking + Meta */}
-      <div className="fade-up fade-up-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-brand-dark rounded-2xl p-5 relative overflow-hidden" style={{ minHeight: 180 }}>
+      {/* ── Ranking + Meta ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-brand-dark rounded-2xl p-5 relative overflow-hidden">
           <BannerParticles />
           <div className="relative space-y-4" style={{ zIndex: 2 }}>
             <div className="flex items-center justify-between gap-2">
@@ -289,29 +313,32 @@ export default async function TecnicoDashboardPage() {
                 <span className="text-2xl">🏆</span>
                 <div>
                   <p className="font-heading font-bold text-white text-sm">Seu ranking</p>
-                  <p className="text-white/50 text-xs">{techCity ?? "—"}, SC</p>
+                  <p className="text-white/50 text-xs">{techCity ?? "—"}</p>
                 </div>
               </div>
-              <span className="font-heading font-extrabold text-brand-green text-3xl">#—</span>
+              <span className="font-heading font-extrabold text-brand-green text-2xl">#—</span>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-xs text-white/60 leading-relaxed">
+            <div className="bg-white/5 rounded-xl p-3 text-xs text-white/50">
               Ranking calculado com dados históricos — disponível em breve.
             </div>
           </div>
         </div>
 
-        <div className="card space-y-4">
+        <div className="bg-white border border-brand-border rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">📈</span>
             <div>
-              <p className="font-heading font-bold text-brand-dark text-sm">Meta mensal · {mesCapitalized}</p>
-              <p className="text-brand-muted text-xs">{servicosMes} de 15 serviços</p>
+              <p className="font-heading font-bold text-brand-dark text-sm">Chamados este mês</p>
+              <p className="text-brand-muted text-xs">{mesCapitalized} {anoAtual}</p>
             </div>
           </div>
           <div>
-            <p className="font-heading font-extrabold text-brand-dark text-3xl leading-tight">
+            <p className="font-heading font-extrabold text-brand-dark text-3xl">
               {servicosMes}
               <span className="text-brand-muted text-base font-normal ml-1">chamados</span>
+            </p>
+            <p className="text-xs text-brand-muted mt-1">
+              Meta: <span className="font-semibold text-brand-dark">15 chamados/mês</span>
             </p>
           </div>
           <div className="space-y-1.5">
@@ -323,28 +350,25 @@ export default async function TecnicoDashboardPage() {
             </div>
             <div className="h-2 bg-brand-bg rounded-full overflow-hidden">
               <div
-                className="h-full bg-brand-green rounded-full transition-all"
+                className="h-full bg-brand-green rounded-full"
                 style={{ width: `${Math.min(100, Math.round((servicosMes / 15) * 100))}%` }}
               />
             </div>
           </div>
           <div className="bg-brand-light rounded-xl px-3 py-2.5">
             <p className="text-xs font-medium text-brand-dark">
-              💡 Faltam <strong>{Math.max(15 - servicosMes, 0)} chamados</strong> pra bater a meta esse mês.
+              💡 Fique online para receber mais chamados automaticamente
             </p>
           </div>
         </div>
       </div>
 
-      {/* Gráfico de ganhos */}
+      {/* ── Gráfico de ganhos ── */}
       <GanhosChart />
 
-      {/* Desempenho */}
-      <div className="fade-up fade-up-5 card">
-        <div className="mb-5">
-          <h2 className="font-heading font-bold text-brand-dark text-lg">🎯 Desempenho — métricas vs meta</h2>
-          <p className="text-xs text-brand-muted mt-0.5">Últimos 30 dias</p>
-        </div>
+      {/* ── Desempenho ── */}
+      <div className="card">
+        <h2 className="font-heading font-bold text-brand-dark text-base mb-5">🎯 Desempenho — métricas vs meta</h2>
         <div className="space-y-4">
           {performance.map(({ label, pct, meta }) => {
             const aboveMeta = pct >= meta;
@@ -370,10 +394,10 @@ export default async function TecnicoDashboardPage() {
         <p className="text-[10px] text-brand-muted mt-4">✅ Acima da meta &nbsp;|&nbsp; ⚠️ Abaixo da meta</p>
       </div>
 
-      {/* Últimos serviços */}
-      <div className="fade-up fade-up-5 card">
+      {/* ── Últimos serviços ── */}
+      <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading font-bold text-brand-dark text-lg">🕘 Últimos serviços</h2>
+          <h2 className="font-heading font-bold text-brand-dark text-base">🕘 Últimos serviços</h2>
           <Link href="/tecnico/ganhos" className="text-xs text-brand-green font-semibold hover:underline flex items-center gap-1">
             Ver histórico completo <ArrowRight size={12} />
           </Link>
@@ -387,19 +411,21 @@ export default async function TecnicoDashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-brand-border">
-                    {["Data", "Cidade", "Módulos", "Recebido", "Nota"].map((h, i) => (
-                      <th key={h} className={`text-xs font-bold uppercase tracking-widest text-brand-muted pb-3 ${i >= 2 ? "text-right" : "text-left"}`}>{h}</th>
-                    ))}
+                    <th className="text-left text-xs font-semibold text-brand-muted pb-2">Data</th>
+                    <th className="text-left text-xs font-semibold text-brand-muted pb-2">Cidade</th>
+                    <th className="text-right text-xs font-semibold text-brand-muted pb-2">Módulos</th>
+                    <th className="text-right text-xs font-semibold text-brand-muted pb-2">Recebido</th>
+                    <th className="text-right text-xs font-semibold text-brand-muted pb-2">Nota</th>
                   </tr>
                 </thead>
                 <tbody>
                   {historico.map((h, i) => (
                     <tr key={i} className="border-b border-brand-border/50 last:border-0">
-                      <td className="py-3 text-brand-dark font-medium">{h.data}</td>
-                      <td className="py-3 text-brand-dark">{h.cidade}</td>
-                      <td className="py-3 text-right text-brand-muted">{h.modulos}</td>
-                      <td className="py-3 text-right font-heading font-bold text-brand-green">{fmt(h.recebido)}</td>
-                      <td className="py-3 text-right text-brand-muted">—</td>
+                      <td className="py-2.5 text-brand-dark font-medium">{h.data}</td>
+                      <td className="py-2.5 text-brand-dark">{h.cidade}</td>
+                      <td className="py-2.5 text-right text-brand-muted">{h.modulos}</td>
+                      <td className="py-2.5 text-right font-bold text-brand-green">{fmt(h.recebido)}</td>
+                      <td className="py-2.5 text-right text-brand-muted">—</td>
                     </tr>
                   ))}
                 </tbody>

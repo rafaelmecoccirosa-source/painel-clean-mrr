@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { MapPin, Sun, Clock, ArrowRight } from "lucide-react";
+import { MapPin, Sun, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type ServiceRequestDB, type ServiceRequestStatus, type PaymentStatus, STATUS_BADGE, estimateHours } from "@/lib/types";
 import ServiceProgressBar from "@/components/shared/ServiceProgressBar";
@@ -16,6 +16,19 @@ function fmt(v: number) {
 
 function fmtDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+function fmtDateShort(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  const day = d.getDate().toString().padStart(2, "0");
+  const monthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  return { day, month: monthNames[d.getMonth()] };
+}
+
+function isToday(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  const now = new Date();
+  return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 }
 
 function StatusBadge({ status }: { status: ServiceRequestStatus }) {
@@ -47,11 +60,11 @@ function Skeleton() {
 }
 
 export default function ChamadosPage() {
-  const [tab, setTab]           = useState<Tab>("available");
+  const [tab, setTab]             = useState<Tab>("available");
   const [available, setAvailable] = useState<ServiceRequestDB[]>([]);
-  const [mine, setMine]         = useState<ServiceRequestDB[]>([]);
-  const [done, setDone]         = useState<ServiceRequestDB[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [mine, setMine]           = useState<ServiceRequestDB[]>([]);
+  const [done, setDone]           = useState<ServiceRequestDB[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const load = useCallback(async () => {
@@ -61,9 +74,6 @@ export default function ChamadosPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Resolve tech city: profile.city → user_metadata.city → no filter.
-      // The profile read can fail with 42P17 (recursive RLS) — swallow it
-      // and fall back to metadata so we still surface chamados.
       let techCity: string | null = null;
       try {
         const { data: profileData } = await supabase
@@ -72,9 +82,7 @@ export default function ChamadosPage() {
           .eq("user_id", user.id)
           .maybeSingle();
         techCity = profileData?.city?.trim() || null;
-      } catch {
-        /* RLS recursion or read error — try metadata */
-      }
+      } catch { /* RLS recursion — try metadata */ }
       if (!techCity) {
         const metaCity = (user.user_metadata?.city as string | undefined)?.trim();
         techCity = metaCity || null;
@@ -105,8 +113,8 @@ export default function ChamadosPage() {
           .limit(20),
       ]);
 
-      const mineData = (mineRes.data as ServiceRequestDB[]) ?? [];
-      const doneData = (doneRes.data as ServiceRequestDB[]) ?? [];
+      const mineData  = (mineRes.data  as ServiceRequestDB[]) ?? [];
+      const doneData  = (doneRes.data  as ServiceRequestDB[]) ?? [];
       setAvailable((availRes.data as ServiceRequestDB[]) ?? []);
       setMine(mineData);
       setDone(doneData);
@@ -126,17 +134,15 @@ export default function ChamadosPage() {
   const tabs: { key: Tab; label: string; emoji: string; count: number; unread?: boolean }[] = [
     { key: "available", label: "Disponíveis", emoji: "🔔", count: available.length },
     { key: "mine",      label: "Meus",        emoji: "📋", count: mine.length, unread: unreadCount > 0 },
-    { key: "done",      label: "Concluídos",  emoji: "✅", count: done.length      },
+    { key: "done",      label: "Concluídos",  emoji: "✅", count: done.length },
   ];
-
-  const shown: Record<Tab, ServiceRequestDB[]> = { available, mine, done };
 
   function renderPaymentBadge(payStatus: PaymentStatus | undefined) {
     const map: Record<string, { label: string; cls: string }> = {
-      pending:               { label: "💰 Aguardando pagamento do cliente",      cls: "bg-gray-100 text-gray-600"       },
-      awaiting_confirmation: { label: "⏳ Cliente pagou, aguardando confirmação", cls: "bg-amber-100 text-amber-700"     },
-      confirmed:             { label: "✅ Pagamento confirmado — repasse em breve", cls: "bg-emerald-100 text-emerald-700" },
-      released:              { label: "💸 Repasse realizado!",                    cls: "bg-brand-light text-brand-dark"  },
+      pending:               { label: "💰 Aguardando pagamento",        cls: "bg-amber-100 text-amber-700" },
+      awaiting_confirmation: { label: "⏳ Aguardando confirmação",      cls: "bg-amber-100 text-amber-700" },
+      confirmed:             { label: "✅ Pagamento confirmado",        cls: "bg-emerald-100 text-emerald-700" },
+      released:              { label: "💸 Repasse realizado!",          cls: "bg-brand-light text-brand-dark" },
     };
     const s = map[payStatus ?? "pending"] ?? map["pending"];
     return (
@@ -146,95 +152,140 @@ export default function ChamadosPage() {
     );
   }
 
-  function renderCard(c: ServiceRequestDB, isAvailable: boolean) {
+  function renderAvailableCard(c: ServiceRequestDB) {
     const repasse = c.price_estimate * 0.75;
     const horas = estimateHours(c.module_count ?? 0);
-    const displayAddress = isAvailable
-      ? c.address.split(",")[0] + " (endereço completo após aceitar)"
-      : c.address;
-    const isDone = c.status === "completed";
+    const shortAddress = c.address.split(",")[0] + " (endereço completo após aceitar)";
 
     return (
-      <Link
-        key={c.id}
-        href={`/tecnico/chamados/${c.id}`}
-        className="card hover:shadow-card-hover transition-shadow flex flex-col gap-3 group"
-      >
+      <Link key={c.id} href={`/tecnico/chamados/${c.id}`}
+        className="card hover:shadow-card-hover transition-shadow group flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={c.status} />
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                Disponível
+              </span>
               <span className="text-xs font-mono text-brand-muted">#{c.id.slice(0, 8).toUpperCase()}</span>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-muted">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={13} /> {displayAddress} — {c.city}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Sun size={13} /> {c.module_count ?? "?"} módulos
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock size={13} /> {fmtDate(c.preferred_date)}, {c.preferred_time}
-              </span>
+              <span className="flex items-center gap-1.5"><MapPin size={13} /> {shortAddress} — {c.city}</span>
+              <span className="flex items-center gap-1.5"><Sun size={13} /> {c.module_count ?? "?"} módulos</span>
+              <span className="flex items-center gap-1.5"><Clock size={13} /> {fmtDate(c.preferred_date)}, {c.preferred_time}</span>
+              <span className="flex items-center gap-1.5 text-brand-muted">~{horas}h estimadas</span>
             </div>
           </div>
           <div className="flex sm:flex-col items-center sm:items-end gap-4 sm:gap-1 flex-shrink-0">
             <div className="text-right">
-              <p className="text-xs text-brand-muted">Repasse</p>
-              <p className="font-heading font-bold text-brand-dark text-lg">{fmt(repasse)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-brand-muted">Repasse</p>
+              <p className="font-heading font-bold text-brand-green text-xl">{fmt(repasse)}</p>
               <p className="text-xs text-brand-muted">~{horas}h estimadas</p>
             </div>
             <ArrowRight size={18} className="text-brand-muted group-hover:text-brand-green transition-colors" />
           </div>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {c.payment_status === "confirmed" ? (
+            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+              💰 Pagamento confirmado
+            </span>
+          ) : (
+            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+              ⏳ Aguardando pagamento
+            </span>
+          )}
+        </div>
+      </Link>
+    );
+  }
 
-        {/* Badges row for available chamados */}
-        {isAvailable && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {c.payment_status === "confirmed" && (
-              <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                💰 Pagamento confirmado
-              </span>
-            )}
-            {(!c.payment_status || c.payment_status === "pending") && (
-              <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
-                ⏳ Aguardando pagamento
-              </span>
-            )}
-            {c.latitude != null && c.longitude != null && (
-              <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">
-                📍 Localização no mapa
-              </span>
+  function renderMineCard(c: ServiceRequestDB) {
+    const repasse = c.price_estimate * 0.75;
+    const today = isToday(c.preferred_date);
+    const { day, month } = fmtDateShort(c.preferred_date);
+
+    return (
+      <Link key={c.id} href={`/tecnico/chamados/${c.id}`}
+        className="card hover:shadow-card-hover transition-shadow group"
+        style={{ borderColor: today ? "#3DC45A" : undefined, borderWidth: today ? 1.5 : undefined }}>
+        <div className="flex gap-4 items-start">
+          {/* Date block */}
+          <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center font-heading font-extrabold leading-tight"
+            style={{
+              background: today ? "linear-gradient(135deg, #3DC45A, #2DAF4A)" : "#EBF3E8",
+              color: today ? "white" : "#1B3A2D",
+            }}>
+            {today ? (
+              <><span className="text-[9px] font-bold uppercase tracking-wide opacity-80">Hoje</span><span className="text-xl">–</span></>
+            ) : (
+              <><span className="text-xl">{day}</span><span className="text-[10px] uppercase opacity-70">{month}</span></>
             )}
           </div>
-        )}
 
-        {/* Progress bar for all non-pending statuses */}
-        {!isAvailable && (
-          <ServiceProgressBar status={c.status} paymentStatus={c.payment_status ?? "pending"} role="tecnico" />
-        )}
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={c.status} />
+              <span className="text-xs font-mono text-brand-muted">#{c.id.slice(0, 8).toUpperCase()}</span>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-muted">
+              <span className="flex items-center gap-1.5"><MapPin size={13} /> {c.address} — {c.city}</span>
+              <span className="flex items-center gap-1.5"><Sun size={13} /> {c.module_count ?? "?"} módulos</span>
+              <span className="flex items-center gap-1.5"><Clock size={13} /> {c.preferred_time}</span>
+            </div>
+            <ServiceProgressBar status={c.status} paymentStatus={c.payment_status ?? "pending"} role="tecnico" />
+          </div>
 
-        {/* Payment status badge for completed chamados */}
-        {isDone && renderPaymentBadge(c.payment_status)}
+          {/* Repasse */}
+          <div className="flex-shrink-0 text-right space-y-1">
+            <p className="font-heading font-bold text-brand-green text-lg">{fmt(repasse)}</p>
+            <p className="text-[10px] text-brand-muted">repasse 75%</p>
+            <ArrowRight size={16} className="text-brand-muted group-hover:text-brand-green transition-colors ml-auto" />
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
-        {/* Repasse detail when confirmed */}
-        {isDone && c.payment_status === "confirmed" && (
-          <p className="text-xs text-brand-muted">
-            O repasse de <strong className="text-brand-green">{fmt(repasse)}</strong> será feito via PIX em até 48h
-          </p>
-        )}
+  function renderDoneCard(c: ServiceRequestDB) {
+    const repasse = c.price_estimate * 0.75;
+
+    return (
+      <Link key={c.id} href={`/tecnico/chamados/${c.id}`}
+        className="flex items-center justify-between px-5 py-4 gap-4 border-b border-brand-border last:border-0 hover:bg-brand-bg transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-brand-green/10 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 size={16} className="text-brand-green" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-brand-dark">{c.city ?? "—"}</p>
+            <p className="text-xs text-brand-muted mt-0.5">
+              {fmtDate(c.preferred_date)} · {c.module_count ?? 0} módulos · #{c.id.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {renderPaymentBadge(c.payment_status)}
+          <div className="text-right">
+            <p className="font-heading font-bold text-brand-green text-base">{fmt(repasse)}</p>
+            <p className="text-[10px] text-brand-muted">75% de {fmt(c.price_estimate)}</p>
+          </div>
+        </div>
       </Link>
     );
   }
 
   return (
     <div className="page-container space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-brand-dark">Chamados</h1>
-        <p className="text-brand-muted text-sm mt-1">Gerencie seus chamados disponíveis e em andamento</p>
+      <div className="fade-up">
+        <p className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-1">Gerenciar chamados</p>
+        <h1 className="font-heading text-3xl font-extrabold text-brand-dark">Chamados</h1>
+        <p className="text-brand-muted text-sm mt-1">
+          Veja chamados disponíveis na sua região, gerencie os aceitos e revise o histórico.
+        </p>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="fade-up fade-up-1 flex gap-2 flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -258,23 +309,41 @@ export default function ChamadosPage() {
 
       {loading ? (
         <Skeleton />
-      ) : shown[tab].length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-2xl mb-3">
-            {tab === "available" ? "🔔" : tab === "mine" ? "📋" : "✅"}
-          </p>
-          <p className="text-brand-muted text-sm">
-            {tab === "available"
-              ? "Nenhum chamado disponível no momento."
-              : tab === "mine"
-              ? "Você não tem chamados em andamento."
-              : "Nenhum chamado concluído ainda."}
-          </p>
-        </div>
+      ) : tab === "available" ? (
+        available.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-2xl mb-3">🔔</p>
+            <p className="font-heading font-bold text-brand-dark text-sm">Nenhum chamado disponível no momento</p>
+            <p className="text-xs text-brand-muted mt-2">Fique online — a gente avisa quando aparecer.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {available.map((c) => renderAvailableCard(c))}
+          </div>
+        )
+      ) : tab === "mine" ? (
+        mine.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-2xl mb-3">📋</p>
+            <p className="font-heading font-bold text-brand-dark text-sm">Nenhum chamado em andamento</p>
+            <p className="text-xs text-brand-muted mt-2">Aceite chamados disponíveis para eles aparecerem aqui.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {mine.map((c) => renderMineCard(c))}
+          </div>
+        )
       ) : (
-        <div className="space-y-4">
-          {shown[tab].map((c) => renderCard(c, tab === "available"))}
-        </div>
+        done.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-2xl mb-3">✅</p>
+            <p className="font-heading font-bold text-brand-dark text-sm">Nenhum chamado concluído ainda</p>
+          </div>
+        ) : (
+          <div className="card !p-0 overflow-hidden">
+            {done.map((c) => renderDoneCard(c))}
+          </div>
+        )
       )}
     </div>
   );
