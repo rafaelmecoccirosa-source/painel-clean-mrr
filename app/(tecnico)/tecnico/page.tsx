@@ -107,24 +107,28 @@ export default async function TecnicoDashboardPage() {
       label: "Ganhos do mês",
       value: fmt(ganhosMes),
       sub: `${mesCapitalized} · repasse 75%`,
+      demo: false,
     },
     {
       icon: <Briefcase size={20} className="text-brand-green" />,
       label: "Serviços realizados",
       value: String(servicosMes),
       sub: `${mesCapitalized} · ${totalServicos} total`,
+      demo: false,
     },
     {
-      icon: <Star size={20} className="text-brand-green" />,
+      icon: <Star size={20} className="text-brand-muted" />,
       label: "Avaliação média",
-      value: MOCK_TECNICO.avaliacaoMedia.toFixed(1),
-      sub: "últimos 30 dias",
+      value: "—",
+      sub: "disponível em breve",
+      demo: true,
     },
     {
-      icon: <Clock size={20} className="text-brand-green" />,
+      icon: <Clock size={20} className="text-brand-muted" />,
       label: "Tempo médio",
-      value: `${MOCK_TECNICO.tempoMedio}h`,
-      sub: "por serviço",
+      value: "—",
+      sub: "disponível em breve",
+      demo: true,
     },
   ];
 
@@ -173,13 +177,15 @@ export default async function TecnicoDashboardPage() {
 
       {/* KPIs */}
       <div className="fade-up fade-up-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {resumo.map(({ icon, label, value, sub }) => (
-          <div key={label} className="card flex flex-col gap-3">
-            <div className="h-10 w-10 rounded-xl bg-brand-green/10 flex items-center justify-center">
+        {resumo.map(({ icon, label, value, sub, demo }) => (
+          <div key={label} className={`card flex flex-col gap-3 ${demo ? "opacity-60" : ""}`}>
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${demo ? "bg-brand-bg" : "bg-brand-green/10"}`}>
               {icon}
             </div>
             <div>
-              <p className="font-heading text-2xl font-extrabold text-brand-dark leading-tight">{value}</p>
+              <p className={`font-heading text-2xl font-extrabold leading-tight ${demo ? "text-brand-muted" : "text-brand-dark"}`}>
+                {value}
+              </p>
               <p className="text-xs text-brand-muted mt-0.5">{label}</p>
               <p className="text-[10px] text-brand-muted mt-0.5">{sub}</p>
             </div>
@@ -339,11 +345,16 @@ export default async function TecnicoDashboardPage() {
       {/* Gráfico de ganhos */}
       <GanhosChart />
 
-      {/* Desempenho */}
-      <div className="fade-up fade-up-5 card">
-        <div className="mb-5">
-          <h2 className="font-heading font-bold text-brand-dark text-lg">🎯 Desempenho — métricas vs meta</h2>
-          <p className="text-xs text-brand-muted mt-0.5">Últimos 30 dias</p>
+      {/* Desempenho — mock, marcado como estimativa */}
+      <div className="fade-up fade-up-5 card opacity-70">
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-heading font-bold text-brand-dark text-lg">🎯 Desempenho</h2>
+            <p className="text-xs text-brand-muted mt-0.5">Disponível quando houver histórico real</p>
+          </div>
+          <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-bg text-brand-muted border border-brand-border">
+            estimativa
+          </span>
         </div>
         <div className="space-y-4">
           {performance.map(({ label, pct, meta }) => {
@@ -351,15 +362,15 @@ export default async function TecnicoDashboardPage() {
             return (
               <div key={label}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-brand-dark">{label}</span>
+                  <span className="text-sm font-medium text-brand-muted">{label}</span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold ${aboveMeta ? "text-emerald-600" : "text-amber-500"}`}>{pct}%</span>
+                    <span className="text-xs font-bold text-brand-muted">{pct}%</span>
                     <span className="text-[10px] text-brand-muted">meta {meta}%</span>
                   </div>
                 </div>
                 <div className="h-2.5 bg-brand-light rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${aboveMeta ? "bg-brand-green" : "bg-amber-400"}`}
+                    className="h-full rounded-full bg-brand-border transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -367,7 +378,7 @@ export default async function TecnicoDashboardPage() {
             );
           })}
         </div>
-        <p className="text-[10px] text-brand-muted mt-4">✅ Acima da meta &nbsp;|&nbsp; ⚠️ Abaixo da meta</p>
+        <p className="text-[10px] text-brand-muted mt-4">* Dados ilustrativos — calculados automaticamente quando houver histórico.</p>
       </div>
 
       {/* Últimos serviços */}
