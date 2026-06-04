@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Eyebrow } from '@/components/landing-v2/shared';
 import { COLORS } from '@/lib/brand-tokens';
 import { initialsOf } from '@/lib/mock-cliente';
-import { createClient } from '@/lib/supabase/client';
 
 type NotifKey = 'lembrete' | 'relatorio' | 'alerta' | 'promocoes';
 
@@ -65,7 +64,6 @@ export default function PerfilView({
   const [editCidade, setEditCidade] = useState(displayCidade && displayCidade !== '—' ? displayCidade : 'Jaraguá do Sul');
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   function openEdit() {
     setEditNome(displayNome);
@@ -115,17 +113,6 @@ export default function PerfilView({
     }
   }
 
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch {
-      setLoggingOut(false);
-    }
-  }
-
   const cidadeDisplay = displayCidade && displayCidade.trim() && displayCidade !== '—' ? displayCidade : 'Jaraguá do Sul';
 
   return (
@@ -153,70 +140,6 @@ export default function PerfilView({
         </h1>
       </div>
 
-      {/* Meu plano — destaque */}
-      <section
-        className="fade-up pc-mobile-stack"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          background: `linear-gradient(135deg, ${COLORS.dark} 0%, #25513C 100%)`,
-          color: 'white',
-          borderRadius: 20,
-          padding: 28,
-          display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: 24,
-          alignItems: 'center',
-          boxShadow: '0 16px 36px rgba(27,58,45,.18)',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <Eyebrow color="#6EE7A0">Meu plano</Eyebrow>
-            <Badge tone="green">● Ativo</Badge>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 800, fontSize: 30, letterSpacing: '-.025em' }}>
-              {plano !== '—' ? `Plano ${plano}` : 'Sem plano ativo'}
-            </span>
-            {plano !== '—' && (
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', fontWeight: 600 }}>· R$ {mensalidade}/mês</span>
-            )}
-          </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,.72)', marginTop: 6 }}>
-            {modulosCount > 0 ? `${modulosCount} módulos` : 'Usina'} · cliente desde {clienteDesde}
-            {descontoIndicacao > 0 && (
-              <> · <b style={{ color: '#6EE7A0' }}>{descontoIndicacao}% de desconto por indicação</b></>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
-            <Button variant="primary" size="md" onClick={() => router.push('/cliente/plano')}>Gerenciar plano</Button>
-            <Button variant="outline" size="md" onClick={() => router.push('/cliente/indicacoes')}>Ganhar desconto →</Button>
-          </div>
-        </div>
-        <div
-          className="pc-mobile-hidden"
-          style={{
-            width: 96,
-            height: 96,
-            borderRadius: 9999,
-            background: `linear-gradient(135deg, ${COLORS.green}, #2DAF4A)`,
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Montserrat',sans-serif",
-            fontWeight: 800,
-            fontSize: 34,
-            letterSpacing: '.02em',
-            boxShadow: '0 8px 24px rgba(61,196,90,.3)',
-            flexShrink: 0,
-          }}
-        >
-          {initialsOf(displayNome)}
-        </div>
-      </section>
-
       <section
         className="fade-up fade-up-1 pc-mobile-stack"
         style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 24 }}
@@ -237,7 +160,7 @@ export default function PerfilView({
                 width: 72,
                 height: 72,
                 borderRadius: 9999,
-                background: `linear-gradient(135deg, ${COLORS.green}, #2DAF4A)`,
+                background: COLORS.dark,
                 color: 'white',
                 display: 'flex',
                 alignItems: 'center',
@@ -246,7 +169,6 @@ export default function PerfilView({
                 fontWeight: 800,
                 fontSize: 26,
                 letterSpacing: '.02em',
-                flexShrink: 0,
               }}
             >
               {initialsOf(displayNome)}
@@ -273,7 +195,10 @@ export default function PerfilView({
             <FieldRow label="Email" value={email} />
             <FieldRow label="Telefone" value={displayPhone || '—'} />
             <FieldRow label="CPF" value="•••.•••.123-45" />
-            <FieldRow label="Cidade" value={`${cidadeDisplay}, SC`} />
+            <FieldRow
+              label="Cidade"
+              value={`${cidadeDisplay}, SC`}
+            />
           </div>
 
           <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${COLORS.border}` }}>
@@ -433,26 +358,6 @@ export default function PerfilView({
           ))}
         </div>
       </section>
-
-      {/* Sair */}
-      <button
-        onClick={handleLogout}
-        disabled={loggingOut}
-        style={{
-          background: 'white',
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 12,
-          padding: '13px',
-          color: '#B91C1C',
-          fontWeight: 700,
-          fontSize: 14,
-          cursor: loggingOut ? 'default' : 'pointer',
-          fontFamily: "'Open Sans',sans-serif",
-          opacity: loggingOut ? 0.6 : 1,
-        }}
-      >
-        {loggingOut ? 'Saindo...' : 'Sair da conta'}
-      </button>
 
       {editing && (
         <EditModal
