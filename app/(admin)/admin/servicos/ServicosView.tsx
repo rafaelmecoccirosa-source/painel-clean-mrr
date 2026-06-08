@@ -30,7 +30,7 @@ export type Servico = {
   tecnicoNome: string;
   modulos: number;
   valor: number;
-  comissao: number;
+  margem: number;
   status: string;
 };
 
@@ -65,7 +65,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
 
   const concluidos     = localServicos.filter(s => s.status === 'completed');
   const totalReceita   = concluidos.reduce((a, s) => a + s.valor, 0);
-  const totalComissao  = concluidos.reduce((a, s) => a + s.comissao, 0);
+  const totalMargem    = concluidos.reduce((a, s) => a + s.margem, 0);
 
   async function assignTecnico(servicoId: string, tecnicoId: string) {
     if (!tecnicoId) return;
@@ -115,7 +115,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
           { emoji: '📋', label: 'Total de serviços',  value: String(localServicos.length) },
           { emoji: '✅', label: 'Concluídos',         value: String(concluidos.length) },
           { emoji: '💰', label: 'Receita total',      value: fmt(totalReceita) },
-          { emoji: '🏦', label: 'Comissão 25%',       value: fmt(totalComissao) },
+          { emoji: '🏦', label: 'Margem plataforma',   value: fmt(totalMargem) },
         ].map(({ emoji, label, value }) => (
           <div key={label} className="bg-white border border-brand-border rounded-2xl p-4 shadow-sm">
             <span className="text-2xl">{emoji}</span>
@@ -158,7 +158,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
           <table className="w-full text-xs">
             <thead className="bg-brand-bg">
               <tr>
-                {['#', 'Data', 'Cidade', 'Cliente', 'Técnico', 'Módulos', 'Valor', 'Comissão', 'Status', ''].map((h, i) => (
+                {['#', 'Data', 'Cidade', 'Cliente', 'Técnico', 'Módulos', 'Valor', 'Margem', 'Status', ''].map((h, i) => (
                   <th key={i} className="text-left px-4 py-3 font-semibold text-brand-muted uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -215,7 +215,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
                   </td>
                   <td className="px-4 py-3 text-center text-brand-muted">{s.modulos}</td>
                   <td className="px-4 py-3 font-semibold text-brand-dark">{s.valor > 0 ? fmt(s.valor) : '—'}</td>
-                  <td className="px-4 py-3 font-semibold text-brand-green">{s.comissao > 0 ? fmt(s.comissao) : '—'}</td>
+                  <td className="px-4 py-3 font-semibold text-brand-green">{s.margem > 0 ? fmt(s.margem) : '—'}</td>
                   <td className="px-4 py-3">{statusLabel(s.status)}</td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/servicos/${s.id}`} className="text-xs text-brand-green font-semibold hover:underline whitespace-nowrap">
@@ -249,7 +249,7 @@ export default function ServicosView({ servicos, tecnicos }: Props) {
               <div className="flex items-center gap-3 text-xs justify-between">
                 <div className="flex gap-3">
                   <span className="font-bold text-brand-dark">{s.valor > 0 ? fmt(s.valor) : '—'}</span>
-                  <span className="text-brand-green font-semibold">comissão: {s.comissao > 0 ? fmt(s.comissao) : '—'}</span>
+                  <span className="text-brand-green font-semibold">margem: {s.margem > 0 ? fmt(s.margem) : '—'}</span>
                 </div>
                 <Link href={`/admin/servicos/${s.id}`} className="text-brand-green font-semibold">Ver →</Link>
               </div>

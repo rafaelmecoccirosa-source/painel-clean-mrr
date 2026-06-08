@@ -50,9 +50,7 @@ export const PRECO_POR_PLACA       = 15;    // mantido para compatibilidade, nã
 export const PRECO_MINIMO          = 300;   // mínimo R$ 300 por visita (mercado SC)
 export const CUSTO_KM              = 2;     // R$ por km de deslocamento
 export const BOOST_MVP             = 1.15;  // 15% boost para atrair técnicos no MVP
-export const COMISSAO_PLATAFORMA   = 0.25;  // 25% para a plataforma
-export const REPASSE_TECNICO_PCT   = 0.75;  // 75% para o técnico
-export const REPASSE_MINIMO_TECNICO = 200;  // técnico nunca recebe menos que R$ 200
+export const PAGAMENTO_POR_PAINEL  = 13;    // R$ por painel (módulo) pago ao técnico (avulso fixo)
 export const DESCONTO_MVP_CLIENTE  = 0.85;  // 15% desconto pro cliente no MVP (SUBSCRIPTION_ENABLED=false)
 export const BOOST_MVP_TECNICO     = 1.15;  // mesma taxa que BOOST_MVP — documentado para clareza
 
@@ -74,11 +72,12 @@ export interface ResultadoPrecificacao {
   multTipo: number;
   multExtra: number;
   custoDeslocamento: number;
-  precoEstimado: number;   // preço interno cheio (com BOOST_MVP)
-  precoCliente: number;    // preço que o cliente paga (com desconto MVP se ativo)
-  precoMin: number;        // -10% do precoCliente
-  precoMax: number;        // +20% do precoCliente
-  repasseTecnico: number;  // 85% do precoEstimado (sem desconto — boost garantido)
+  precoEstimado: number;    // preço interno cheio (com BOOST_MVP)
+  precoCliente: number;     // preço que o cliente paga (com desconto MVP se ativo)
+  precoMin: number;         // -10% do precoCliente
+  precoMax: number;         // +20% do precoCliente
+  repasseTecnico: number;   // R$ 13 × placas (pagamento avulso ao técnico)
+  margemPlataforma: number; // precoCliente − repasseTecnico
   valorPorPlaca: number;
   boostAplicado: boolean;
   descontoMvpAtivo: boolean;
@@ -123,6 +122,7 @@ export function calcularPreco(dados: DadosServico): ResultadoPrecificacao {
       precoMin: 0,
       precoMax: 0,
       repasseTecnico: 0,
+      margemPlataforma: 0,
       valorPorPlaca: 0,
       boostAplicado: false,
       descontoMvpAtivo: false,
@@ -162,25 +162,20 @@ export function calcularPreco(dados: DadosServico): ResultadoPrecificacao {
   // 6. Boost MVP (garantir aceitação dos técnicos)
   precoEstimado *= BOOST_MVP;
 
-  // 7. Garantia de repasse mínimo pro técnico
-  const repasseBruto = precoEstimado * REPASSE_TECNICO_PCT;
-  if (repasseBruto < REPASSE_MINIMO_TECNICO) {
-    // Ajustar preço para cima para garantir repasse mínimo
-    precoEstimado = Math.ceil(REPASSE_MINIMO_TECNICO / REPASSE_TECNICO_PCT);
-  }
-
-  // 8. Arredondar preço interno
+  // 7. Arredondar preço interno
   precoEstimado = Math.round(precoEstimado);
 
-  // 9. Preço para o cliente (com desconto MVP se ativo)
+  // 8. Preço para o cliente (com desconto MVP se ativo)
   const descontoMvpAtivo = MVP_PRICING_ACTIVE;
   const precoCliente = descontoMvpAtivo
     ? Math.round(precoEstimado * DESCONTO_MVP_CLIENTE)
     : precoEstimado;
 
-  // 10. Repasse ao técnico = 75% do preço INTERNO (não do preço com desconto)
-  //     Isso garante o boost pro técnico mesmo com desconto pro cliente
-  const repasseTecnico = Math.round(precoEstimado * REPASSE_TECNICO_PCT);
+  // 9. Repasse ao técnico: pagamento avulso fixo por painel
+  const repasseTecnico = dados.placas * PAGAMENTO_POR_PAINEL;
+
+  // 10. Margem da plataforma = o que o cliente paga menos o repasse
+  const margemPlataforma = precoCliente - repasseTecnico;
 
   // 11. Faixa exibida baseada no precoCliente (±10% min, +20% max)
   const precoMin = Math.round(precoCliente * 0.9);
@@ -196,6 +191,7 @@ export function calcularPreco(dados: DadosServico): ResultadoPrecificacao {
     precoMin,
     precoMax,
     repasseTecnico,
+    margemPlataforma,
     valorPorPlaca: Math.round(precoCliente / dados.placas),
     boostAplicado: true,
     descontoMvpAtivo,

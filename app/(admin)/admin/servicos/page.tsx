@@ -71,7 +71,7 @@ export default async function ServicosPage() {
     tecnicoNome:     s.technician_id ? (nameMap[s.technician_id] ?? s.technician_id.slice(0, 8)) : "—",
     modulos:         s.module_count ?? 0,
     valor:           s.status === "completed" ? (s.price_estimate ?? 0) : 0,
-    comissao:        s.status === "completed" ? (s.price_estimate ?? 0) * 0.25 : 0,
+    margem:          s.status === "completed" ? Math.max(0, (s.price_estimate ?? 0) - (s.module_count ?? 0) * 13) : 0,
     status:          s.status ?? "pending",
   }));
 

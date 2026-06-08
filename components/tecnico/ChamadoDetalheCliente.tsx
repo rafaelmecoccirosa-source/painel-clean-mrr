@@ -12,7 +12,7 @@ import Toast, { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import type { ServiceRequestDB, ServiceReport, Review } from "@/lib/types";
 import ChatBox, { insertSystemMessage } from "@/components/shared/ChatBox";
-import { REPASSE_MINIMO_TECNICO } from "@/lib/pricing";
+import { PAGAMENTO_POR_PAINEL } from "@/lib/pricing";
 
 const CHECKLIST_LABELS: Record<string, string> = {
   visual_inspection: "Verificação visual das placas",
@@ -189,7 +189,7 @@ function ServiceDetailsGrid({ service }: { service: ServiceRequestDB }) {
 
 function ServiceInfoCard({ service }: { service: ServiceRequestDB }) {
   const tempo = tempoByModulos(service.module_count);
-  const repasse = service.price_estimate * 0.75;
+  const repasse = (service.module_count ?? 0) * PAGAMENTO_POR_PAINEL;
 
   const statusLabel: Record<string, string> = {
     accepted:    "🔵 Técnico confirmado",
@@ -263,7 +263,7 @@ function ServiceInfoCard({ service }: { service: ServiceRequestDB }) {
       <div className="bg-brand-dark rounded-xl px-5 py-4 space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-white/50 mb-0.5">Seu repasse (75%)</p>
+            <p className="text-xs text-white/50 mb-0.5">Seu repasse (R$ 13/módulo)</p>
             <p className="font-heading font-extrabold text-2xl text-brand-green">{fmt(repasse)}</p>
           </div>
           <div className="text-right">
@@ -271,11 +271,6 @@ function ServiceInfoCard({ service }: { service: ServiceRequestDB }) {
             <p className="text-white font-semibold">{fmt(service.price_estimate)}</p>
           </div>
         </div>
-        {repasse < REPASSE_MINIMO_TECNICO * 1.2 && (
-          <p className="text-xs text-brand-green/70">
-            💰 Ganho mínimo garantido: R$ {REPASSE_MINIMO_TECNICO.toFixed(0)}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -292,8 +287,8 @@ function Calculator({
   modulos: number;
   distanciaKm: number;
 }) {
-  const repasse  = valorServico * 0.75;
-  const comissao = valorServico * 0.25;
+  const repasse        = modulos * PAGAMENTO_POR_PAINEL;
+  const margemAbsoluta = valorServico - repasse;
   const tempo    = tempoByModulos(modulos);
 
   const [distancia, setDistancia]       = useState(distanciaKm);
@@ -376,12 +371,12 @@ function Calculator({
           <span className="text-red-400 font-semibold">− {fmt(totalCustos)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-white/70">Repasse bruto (75%)</span>
+          <span className="text-white/70">Repasse bruto ({modulos} módulos × R$ 13)</span>
           <span className="text-white font-medium">{fmt(repasse)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-white/70">Comissão plataforma (25%)</span>
-          <span className="text-red-400 font-medium">− {fmt(comissao)}</span>
+          <span className="text-white/70">Margem plataforma</span>
+          <span className="text-white/50 font-medium">{fmt(Math.max(0, margemAbsoluta))}</span>
         </div>
 
         <div className={`flex items-center justify-between bg-white/5 ring-1 ${margemRingColor} rounded-xl px-4 py-4 mt-2`}>
@@ -694,15 +689,10 @@ export default function ChamadoDetalheCliente({ id }: Props) {
 
             <div className="flex items-center justify-between bg-brand-bg rounded-xl px-4 py-3">
               <div>
-                <span className="text-sm text-brand-muted">Seu repasse (75%)</span>
-                {currentFinalPrice * 0.75 < REPASSE_MINIMO_TECNICO * 1.2 && (
-                  <p className="text-[10px] text-brand-muted mt-0.5">
-                    💰 Mínimo garantido: R$ {REPASSE_MINIMO_TECNICO.toFixed(0)}
-                  </p>
-                )}
+                <span className="text-sm text-brand-muted">Seu repasse (R$ 13/módulo)</span>
               </div>
               <span className="font-heading font-extrabold text-xl text-brand-green">
-                {fmt(currentFinalPrice * 0.75)}
+                {fmt(module_count * PAGAMENTO_POR_PAINEL)}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">

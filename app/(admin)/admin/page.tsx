@@ -155,7 +155,7 @@ export default async function AdminDashboardPage() {
     tecnico:  s.technician_id ? (nameMap[s.technician_id] ?? s.technician_id.slice(0, 8)) : "—",
     modulos:  s.module_count ?? 0,
     valor:    s.status === "completed" ? (s.price_estimate ?? 0) : 0,
-    comissao: s.status === "completed" ? (s.price_estimate ?? 0) * 0.25 : 0,
+    margem:   s.status === "completed" ? Math.max(0, (s.price_estimate ?? 0) - (s.module_count ?? 0) * 13) : 0,
     status:   s.status === "completed"   ? "concluido"
             : s.status === "in_progress" ? "andamento"
             : s.status === "accepted"    ? "agendado"
@@ -406,7 +406,7 @@ export default async function AdminDashboardPage() {
           <table className="w-full text-xs">
             <thead className="bg-brand-bg">
               <tr>
-                {["Data", "Cidade", "Cliente", "Técnico", "Placas", "Valor", "Comissão", "Status", "Nota"].map(
+                {["Data", "Cidade", "Cliente", "Técnico", "Placas", "Valor", "Margem", "Status", "Nota"].map(
                   (h) => (
                     <th
                       key={h}
@@ -430,7 +430,7 @@ export default async function AdminDashboardPage() {
                     {s.valor > 0 ? fmt(s.valor) : "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-brand-green">
-                    {s.comissao > 0 ? fmt(s.comissao) : "—"}
+                    {s.margem > 0 ? fmt(s.margem) : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={s.status} />
@@ -462,7 +462,7 @@ export default async function AdminDashboardPage() {
                   {s.valor > 0 ? fmt(s.valor) : "—"}
                 </span>
                 <span className="text-brand-green font-semibold">
-                  comissão: {s.comissao > 0 ? fmt(s.comissao) : "—"}
+                  margem: {s.margem > 0 ? fmt(s.margem) : "—"}
                 </span>
                 {s.nota !== null && (
                   <span className="text-amber-500 font-bold">⭐ {s.nota.toFixed(1)}</span>

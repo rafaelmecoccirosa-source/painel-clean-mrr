@@ -75,11 +75,12 @@ export default function TermosPage() {
             </p>
           </Section>
 
-          <Section title="5. Modelo Financeiro e Comissões">
+          <Section title="5. Modelo Financeiro e Repasses">
             <ul>
-              <li>A Painel Clean retém <strong>25%</strong> do valor de cada serviço como comissão de intermediação.</li>
-              <li>O repasse ao Técnico (75% do valor) é realizado via PIX após a conclusão e confirmação do pagamento.</li>
-              <li>Cadastro gratuito para técnicos — sem mensalidade. Apenas 25% de comissão por serviço realizado.</li>
+              <li>O repasse ao Técnico é fixo em <strong>R$ 13,00 por módulo</strong> limpo, independente do valor total cobrado ao cliente.</li>
+              <li>A margem da plataforma é a diferença entre o valor cobrado do cliente e o repasse ao Técnico.</li>
+              <li>O repasse é realizado via PIX após a conclusão e confirmação do pagamento pelo cliente.</li>
+              <li>Cadastro gratuito para técnicos — sem mensalidade. Pagamento por módulo limpo, sem taxa percentual.</li>
               <li>Os preços dos serviços são definidos pela plataforma e podem ser atualizados com aviso prévio de 30 dias.</li>
             </ul>
           </Section>

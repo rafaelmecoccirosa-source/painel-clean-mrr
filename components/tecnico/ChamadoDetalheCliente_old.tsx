@@ -12,7 +12,7 @@ import Toast, { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import type { ServiceRequestDB, ServiceReport, Review } from "@/lib/types";
 import ChatBox, { insertSystemMessage } from "@/components/shared/ChatBox";
-import { REPASSE_MINIMO_TECNICO } from "@/lib/pricing";
+const REPASSE_MINIMO_TECNICO = 200; // legacy — kept for _old file only
 
 const CHECKLIST_LABELS: Record<string, string> = {
   visual_inspection: "Verificação visual das placas",

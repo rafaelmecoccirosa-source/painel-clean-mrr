@@ -102,10 +102,10 @@ export default function AgendaView({ chamados }: { chamados: AgendaChamado[] }) 
   const diasComChamado = new Set(monthChamados.map(c => c.data)).size;
   const ganhosPrevisto = monthChamados
     .filter(c => c.status !== 'concluido')
-    .reduce((a, c) => a + c.valor * 0.75, 0);
+    .reduce((a, c) => a + c.modulos * 13, 0);
   const ganhosConcluidos = monthChamados
     .filter(c => c.status === 'concluido')
-    .reduce((a, c) => a + c.valor * 0.75, 0);
+    .reduce((a, c) => a + c.modulos * 13, 0);
 
   let maxDay = '';
   let maxCount = 0;
@@ -253,7 +253,7 @@ export default function AgendaView({ chamados }: { chamados: AgendaChamado[] }) 
                     <div className="flex items-center gap-4 text-xs pt-2 border-t border-brand-border">
                       <span className="text-brand-muted">🔋 {c.modulos} módulos</span>
                       <span className="font-bold text-brand-green">
-                        💰 {fmt(c.valor * 0.75)} <span className="font-normal text-brand-muted">(repasse 75%)</span>
+                        💰 {fmt(c.modulos * 13)} <span className="font-normal text-brand-muted">(R$ 13/módulo)</span>
                       </span>
                     </div>
                     <Link

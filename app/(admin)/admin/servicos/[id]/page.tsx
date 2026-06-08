@@ -116,8 +116,8 @@ export default async function AdminServicoDetailPage({
   }
 
   const valorServico = service?.price_estimate ?? 0;
-  const comissao = valorServico * 0.25;
-  const repasse = valorServico * 0.75;
+  const repasse  = (service?.module_count ?? 0) * 13;
+  const margem   = Math.max(0, valorServico - repasse);
 
   return (
     <div className="page-container max-w-3xl space-y-6">
@@ -335,11 +335,11 @@ export default async function AdminServicoDetailPage({
                 <p className="font-heading font-extrabold text-brand-green text-lg">{fmt(valorServico)}</p>
               </div>
               <div>
-                <p className="text-white/50 text-xs mb-1">Comissão 25%</p>
-                <p className="font-heading font-extrabold text-white text-lg">{fmt(comissao)}</p>
+                <p className="text-white/50 text-xs mb-1">Margem plataforma</p>
+                <p className="font-heading font-extrabold text-white text-lg">{fmt(margem)}</p>
               </div>
               <div>
-                <p className="text-white/50 text-xs mb-1">Repasse técnico 75%</p>
+                <p className="text-white/50 text-xs mb-1">Repasse técnico</p>
                 <p className="font-heading font-extrabold text-brand-green text-lg">{fmt(repasse)}</p>
               </div>
             </div>

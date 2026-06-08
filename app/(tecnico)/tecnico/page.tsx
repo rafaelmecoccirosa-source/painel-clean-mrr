@@ -46,7 +46,7 @@ export default async function TecnicoDashboardPage() {
     await Promise.all([
       admin
         .from("service_requests")
-        .select("price_estimate")
+        .select("price_estimate, module_count")
         .eq("technician_id", user.id)
         .eq("status", "completed")
         .gte("preferred_date", firstOfMonth),
@@ -82,7 +82,7 @@ export default async function TecnicoDashboardPage() {
     ]);
 
   const ganhosMes = Math.round(
-    (completedMonthRes.data ?? []).reduce((s, r) => s + (r.price_estimate ?? 0) * 0.75, 0),
+    (completedMonthRes.data ?? []).reduce((s, r) => s + (r.module_count ?? 0) * 13, 0),
   );
   const servicosMes = completedMonthRes.data?.length ?? 0;
   const totalServicos = completedAllRes.count ?? 0;
@@ -94,7 +94,7 @@ export default async function TecnicoDashboardPage() {
     data:     s.preferred_date ? fmtDate(s.preferred_date) : "—",
     cidade:   s.city ?? "—",
     modulos:  s.module_count ?? 0,
-    recebido: Math.round((s.price_estimate ?? 0) * 0.75),
+    recebido: (s.module_count ?? 0) * 13,
   }));
 
   const mesAtual = now.toLocaleString("pt-BR", { month: "long" });
@@ -106,7 +106,7 @@ export default async function TecnicoDashboardPage() {
       icon: <DollarSign size={20} className="text-brand-green" />,
       label: "Ganhos do mês",
       value: fmt(ganhosMes),
-      sub: `${mesCapitalized} · repasse 75%`,
+      sub: `${mesCapitalized} · R$ 13/módulo`,
       demo: false,
     },
     {
@@ -161,8 +161,8 @@ export default async function TecnicoDashboardPage() {
           <div className="flex items-start gap-3 bg-brand-light border border-brand-border rounded-2xl px-4 py-3.5">
             <span className="text-2xl flex-shrink-0">💰</span>
             <div>
-              <p className="text-sm font-bold text-brand-dark">Sem mensalidade — apenas 25% de comissão</p>
-              <p className="text-xs text-brand-muted mt-0.5">Ex: serviço de R$ 600 → você recebe R$ 450 via PIX.</p>
+              <p className="text-sm font-bold text-brand-dark">Sem mensalidade — R$ 13 por módulo limpo</p>
+              <p className="text-xs text-brand-muted mt-0.5">Ex: 35 módulos → você recebe R$ 455 via PIX.</p>
             </div>
           </div>
         )}
@@ -213,7 +213,7 @@ export default async function TecnicoDashboardPage() {
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-muted">
                     <span>📅 {c.preferred_date ? fmtDate(c.preferred_date) : "—"} · {c.preferred_time ?? "—"}</span>
                     <span>🔋 {c.module_count ?? 0} módulos</span>
-                    <span className="text-brand-green font-semibold">💰 {fmt((c.price_estimate ?? 0) * 0.75)} repasse</span>
+                    <span className="text-brand-green font-semibold">💰 {fmt((c.module_count ?? 0) * 13)} repasse</span>
                   </div>
                 </div>
                 <Link

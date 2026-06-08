@@ -91,8 +91,8 @@ export default async function GanhosPage() {
     return d.getFullYear() === yearNow && d.getMonth() === monthNow;
   });
 
-  const totalAcumulado = items.reduce((s, r) => s + r.price_estimate * 0.75, 0);
-  const totalMes = itemsMes.reduce((s, r) => s + r.price_estimate * 0.75, 0);
+  const totalAcumulado = items.reduce((s, r) => s + r.module_count * 13, 0);
+  const totalMes = itemsMes.reduce((s, r) => s + r.module_count * 13, 0);
   const servicosMes = itemsMes.length;
   const ticketMedio = servicosMes > 0 ? totalMes / servicosMes : 0;
 
@@ -107,7 +107,7 @@ export default async function GanhosPage() {
         const rd = new Date(r.preferred_date);
         return rd.getFullYear() === y && rd.getMonth() === m;
       })
-      .reduce((s, r) => s + r.price_estimate * 0.75, 0);
+      .reduce((s, r) => s + r.module_count * 13, 0);
     months6.push({ mes: MES_LABELS[m], valor: Math.round(valor) });
   }
 
@@ -124,7 +124,7 @@ export default async function GanhosPage() {
   const steps = [
     { num: 1, t: "Você conclui o serviço", d: "Faz a limpeza, envia fotos e checklist." },
     { num: 2, t: "Cliente confirma", d: "Tem até 24h pra avaliar. Sem resposta = aprovado automaticamente." },
-    { num: 3, t: "PIX automático", d: "75% do valor cai na sua conta em até 48h. Você acompanha aqui." },
+    { num: 3, t: "PIX automático", d: "R$ 13 por módulo cai na sua conta em até 48h. Você acompanha aqui." },
   ];
 
   return (
@@ -158,7 +158,7 @@ export default async function GanhosPage() {
               </span>
             </div>
             <p className="text-sm mt-3" style={{ color: "rgba(255,255,255,.6)" }}>
-              {servicosMes} serviço{servicosMes !== 1 ? "s" : ""} · ticket médio {fmt(ticketMedio)} · repasse 75%
+              {servicosMes} serviço{servicosMes !== 1 ? "s" : ""} · ticket médio {fmt(ticketMedio)} · R$ 13/módulo
             </p>
           </div>
 
@@ -194,7 +194,7 @@ export default async function GanhosPage() {
       <div className="fade-up fade-up-2 card space-y-4">
         <div>
           <h2 className="font-heading font-bold text-brand-dark text-base">Ganhos — últimos 6 meses</h2>
-          <p className="text-xs text-brand-muted mt-0.5">Repasse líquido (75% do valor do serviço)</p>
+          <p className="text-xs text-brand-muted mt-0.5">Repasse líquido (R$ 13 por módulo)</p>
         </div>
         {months6.every((m) => m.valor === 0) ? (
           <p className="text-sm text-brand-muted text-center py-8">Nenhum serviço concluído nos últimos 6 meses.</p>
@@ -234,7 +234,7 @@ export default async function GanhosPage() {
         ) : (
           <div className="divide-y divide-brand-border">
             {items.slice(0, 20).map((s) => {
-              const repasse = s.price_estimate * 0.75;
+              const repasse = s.module_count * 13;
               return (
                 <div key={s.id} className="flex items-center justify-between px-5 py-4 gap-4">
                   <div className="flex items-center gap-3">
@@ -252,7 +252,7 @@ export default async function GanhosPage() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-heading font-bold text-brand-green text-base">{fmt(repasse)}</p>
-                    <p className="text-[10px] text-brand-muted">75% de {fmt(s.price_estimate)}</p>
+                    <p className="text-[10px] text-brand-muted">{s.module_count} módulos × R$ 13</p>
                     <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 mt-1">
                       Repasse feito
                     </span>

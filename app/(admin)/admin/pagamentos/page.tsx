@@ -378,8 +378,8 @@ function PaymentRow({
   onReject: () => void;
   onRelease: () => void;
 }) {
-  const repasse = s.price_estimate * 0.75;
-  const comissao = s.price_estimate * 0.25;
+  const repasse = (s.module_count ?? 0) * 13;
+  const margem  = Math.max(0, s.price_estimate - repasse);
 
   function fmt(v: number) {
     return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -408,8 +408,8 @@ function PaymentRow({
             <p className="font-bold text-brand-green text-sm mt-0.5">{fmt(repasse)}</p>
           </div>
           <div className="bg-brand-bg rounded-xl px-3 py-2.5">
-            <p className="text-[10px] text-brand-muted uppercase tracking-wide">Comissão</p>
-            <p className="font-bold text-brand-dark text-sm mt-0.5">{fmt(comissao)}</p>
+            <p className="text-[10px] text-brand-muted uppercase tracking-wide">Margem</p>
+            <p className="font-bold text-brand-dark text-sm mt-0.5">{fmt(margem)}</p>
           </div>
           <div className="bg-brand-bg rounded-xl px-3 py-2.5">
             <p className="text-[10px] text-brand-muted uppercase tracking-wide">

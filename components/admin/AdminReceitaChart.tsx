@@ -35,7 +35,7 @@ export default function AdminReceitaChart() {
           📈 Receita semanal — últimas 8 semanas
         </h2>
         <span className="text-xs text-brand-muted bg-brand-light px-3 py-1 rounded-full">
-          comissão 25%
+          margem plataforma
         </span>
       </div>
 

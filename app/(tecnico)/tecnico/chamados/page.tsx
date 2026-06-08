@@ -153,7 +153,7 @@ export default function ChamadosPage() {
   }
 
   function renderAvailableCard(c: ServiceRequestDB) {
-    const repasse = c.price_estimate * 0.75;
+    const repasse = (c.module_count ?? 0) * 13;
     const horas = estimateHours(c.module_count ?? 0);
     const shortAddress = c.address.split(",")[0] + " (endereço completo após aceitar)";
 
@@ -200,7 +200,7 @@ export default function ChamadosPage() {
   }
 
   function renderMineCard(c: ServiceRequestDB) {
-    const repasse = c.price_estimate * 0.75;
+    const repasse = (c.module_count ?? 0) * 13;
     const today = isToday(c.preferred_date);
     const { day, month } = fmtDateShort(c.preferred_date);
 
@@ -239,7 +239,7 @@ export default function ChamadosPage() {
           {/* Repasse */}
           <div className="flex-shrink-0 text-right space-y-1">
             <p className="font-heading font-bold text-brand-green text-lg">{fmt(repasse)}</p>
-            <p className="text-[10px] text-brand-muted">repasse 75%</p>
+            <p className="text-[10px] text-brand-muted">R$ 13/módulo</p>
             <ArrowRight size={16} className="text-brand-muted group-hover:text-brand-green transition-colors ml-auto" />
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function ChamadosPage() {
   }
 
   function renderDoneCard(c: ServiceRequestDB) {
-    const repasse = c.price_estimate * 0.75;
+    const repasse = (c.module_count ?? 0) * 13;
 
     return (
       <Link key={c.id} href={`/tecnico/chamados/${c.id}`}
@@ -268,7 +268,7 @@ export default function ChamadosPage() {
           {renderPaymentBadge(c.payment_status)}
           <div className="text-right">
             <p className="font-heading font-bold text-brand-green text-base">{fmt(repasse)}</p>
-            <p className="text-[10px] text-brand-muted">75% de {fmt(c.price_estimate)}</p>
+            <p className="text-[10px] text-brand-muted">{c.module_count ?? 0} módulos × R$ 13</p>
           </div>
         </div>
       </Link>

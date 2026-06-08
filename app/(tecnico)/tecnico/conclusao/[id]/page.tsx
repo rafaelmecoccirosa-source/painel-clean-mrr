@@ -48,7 +48,7 @@ export default async function ConclusaoPage({
   const endereco     = service ? `${service.address} — ${service.city}` : "Endereço não disponível";
   const dataServico  = service?.preferred_date ?? null;
   const valorServico = service?.price_estimate ?? 300;
-  const repasse      = valorServico * 0.75;
+  const repasse      = modulos * 13;
 
   const previsto: PrevistoData = {
     valorServico,
