@@ -3,6 +3,7 @@
     "productionBranch": "main"
   },
   "crons": [
-    { "path": "/api/cron/schedule-services", "schedule": "0 8 * * *" }
+    { "path": "/api/cron/schedule-services", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/billing", "schedule": "0 9 * * *" }
   ]
 }
