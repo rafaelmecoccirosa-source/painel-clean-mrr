@@ -75,6 +75,7 @@ export default function ConclusaoCliente({
 
   const [urlAntes,  setUrlAntes]  = useState("");
   const [urlDepois, setUrlDepois] = useState("");
+  const [uploading, setUploading] = useState<"antes" | "depois" | null>(null);
   const [checklist, setChecklist] = useState<Record<string, boolean>>(
     Object.fromEntries(CHECKLIST_ITEMS.map((i) => [i.key, false]))
   );
@@ -107,6 +108,34 @@ export default function ConclusaoCliente({
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  async function handlePhotoUpload(file: File, kind: "antes" | "depois") {
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("Foto muito grande (máx. 10MB).", "error");
+      return;
+    }
+    setUploading(kind);
+    try {
+      const supabase = createClient();
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${servicoId}/${kind}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("service-photos")
+        .upload(path, file, { upsert: true, contentType: file.type || undefined });
+      if (error) {
+        showToast(`Erro no upload: ${error.message}`, "error");
+        return;
+      }
+      const { data } = supabase.storage.from("service-photos").getPublicUrl(path);
+      if (kind === "antes") setUrlAntes(data.publicUrl);
+      else setUrlDepois(data.publicUrl);
+      showToast("Foto enviada!", "success");
+    } catch {
+      showToast("Erro inesperado no upload.", "error");
+    } finally {
+      setUploading(null);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -119,8 +148,7 @@ export default function ConclusaoCliente({
         return;
       }
 
-      // Optional: insert service_report record if table exists
-      await supabase.from("service_reports").insert({
+      const { error: reportError } = await supabase.from("service_reports").insert({
         service_request_id: servicoId,
         photos_before:      urlAntes  ? [urlAntes]  : [],
         photos_after:       urlDepois ? [urlDepois] : [],
@@ -129,7 +157,12 @@ export default function ConclusaoCliente({
         general_condition:  condition,
         geracao_antes:      geracaoAntes ? parseFloat(geracaoAntes) : null,
         geracao_depois:     geracaoDepois ?? null,
-      }).then(() => {/* ignore error — table may not exist */});
+      });
+      if (reportError) {
+        // Não bloqueia a conclusão, mas avisa — antes o erro era engolido e relatórios se perdiam
+        console.warn("[conclusao] service_report insert:", reportError.message);
+        showToast("Serviço será concluído, mas o relatório não foi salvo. Avise o suporte.", "error");
+      }
 
       const { error } = await supabase
         .from("service_requests")
@@ -203,35 +236,59 @@ export default function ConclusaoCliente({
         </div>
       </div>
 
-      {/* Fotos — URL */}
+      {/* Fotos — upload Supabase Storage */}
       <div className="card space-y-4">
         <h2 className="font-heading font-bold text-brand-dark text-base flex items-center gap-2">
           <Camera size={17} className="text-brand-green" />
-          Fotos do serviço <span className="text-xs font-normal text-brand-muted">(opcional)</span>
+          Fotos do serviço <span className="text-xs font-normal text-brand-muted">(antes/depois)</span>
         </h2>
-        <div>
-          <label className="block text-xs font-semibold text-brand-muted uppercase tracking-wide mb-1.5">
-            URL — foto antes da limpeza
-          </label>
-          <input
-            type="url"
-            value={urlAntes}
-            onChange={(e) => setUrlAntes(e.target.value)}
-            placeholder="https://…"
-            className={inputBase}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-brand-muted uppercase tracking-wide mb-1.5">
-            URL — foto depois da limpeza
-          </label>
-          <input
-            type="url"
-            value={urlDepois}
-            onChange={(e) => setUrlDepois(e.target.value)}
-            placeholder="https://…"
-            className={inputBase}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {([
+            { kind: "antes" as const,  label: "Antes da limpeza",  url: urlAntes  },
+            { kind: "depois" as const, label: "Depois da limpeza", url: urlDepois },
+          ]).map(({ kind, label, url }) => (
+            <div key={kind}>
+              <label className="block text-xs font-semibold text-brand-muted uppercase tracking-wide mb-1.5">
+                {label}
+              </label>
+              <label className={`block rounded-xl border-2 border-dashed cursor-pointer overflow-hidden transition-colors ${
+                url ? "border-brand-green/40" : "border-brand-border hover:border-brand-green/50"
+              }`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  disabled={uploading !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoUpload(file, kind);
+                    e.target.value = "";
+                  }}
+                />
+                {url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={url} alt={label} className="w-full h-36 object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-36 gap-2 text-brand-muted">
+                    <Camera size={22} />
+                    <span className="text-xs font-medium">
+                      {uploading === kind ? "Enviando…" : "Tirar foto ou escolher da galeria"}
+                    </span>
+                  </div>
+                )}
+              </label>
+              {url && (
+                <button
+                  type="button"
+                  className="mt-1.5 text-xs text-brand-muted hover:text-red-500 transition-colors"
+                  onClick={() => (kind === "antes" ? setUrlAntes("") : setUrlDepois(""))}
+                >
+                  Remover foto
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

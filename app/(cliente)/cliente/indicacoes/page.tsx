@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import IndicacoesView, { type IndicacoesProps } from './IndicacoesView';
 import { formatDateBR } from '@/lib/mock-cliente';
@@ -23,7 +24,7 @@ export default async function IndicacoesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [referralsRes, subRes] = await Promise.all([
+  const [referralsRes, subRes, profileRes] = await Promise.all([
     supabase
       .from('referrals')
       .select('*')
@@ -35,6 +36,11 @@ export default async function IndicacoesPage() {
       .eq('client_id', user.id)
       .eq('status', 'active')
       .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('referral_code')
+      .eq('user_id', user.id)
       .maybeSingle(),
   ]);
 
@@ -53,7 +59,10 @@ export default async function IndicacoesPage() {
   const indicacoesAtivas = referrals.filter(r => r.status === 'active').length;
   const descontoIndicacao = indicacoesAtivas * 6;
   const mensalidadeOriginal = subRes.data?.price_monthly ?? 0;
-  const referralLink = `painelclean.com.br/ref/${user.id.slice(0, 8).toUpperCase()}`;
+  // Link real e rastreável: /ref/CODIGO grava cookie e vincula no cadastro
+  const host = headers().get('host') ?? 'painel-clean-mrr.vercel.app';
+  const code = profileRes.data?.referral_code ?? user.id.slice(0, 8).toUpperCase();
+  const referralLink = `${host}/ref/${code}`;
 
   const indicacoes: IndicacoesProps['indicacoes'] = referrals.map(r => {
     const createdAt = new Date(r.created_at);

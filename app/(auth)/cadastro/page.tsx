@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import { LoginBackground } from "@/components/LoginBackground";
 import { SC_MUNICIPIOS } from "@/components/landing-v2/sc-municipios";
-import { sugerirPlano } from "@/lib/pricing";
+import { sugerirPlano, calcularEntrada } from "@/lib/pricing";
 import { AlertCircle, CheckCircle2, Plus, Trash2, Clock } from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -340,6 +340,11 @@ function CadastroInner() {
         next_service_at: new Date(now.getTime() + 7  * 24 * 60 * 60 * 1000).toISOString(),
       });
       if (subError) console.warn("[cadastro] subscription insert:", subError.message);
+
+      // Gera a fatura da taxa de adesão e vincula indicação (cookie /ref/CODIGO)
+      if (!subError) {
+        await fetch("/api/cliente/pos-assinatura", { method: "POST" }).catch(() => {});
+      }
     }
 
     setLoading(false);
@@ -734,8 +739,16 @@ function CadastroInner() {
                   );
                 })}
 
-                <div className="bg-brand-light border border-brand-border rounded-xl px-4 py-3 text-xs text-brand-muted">
-                  1ª limpeza com <span className="font-semibold text-brand-dark">50% off</span> · contrato mínimo de 12 meses
+                <div className="bg-brand-light border border-brand-border rounded-xl px-4 py-3 text-xs text-brand-muted leading-relaxed">
+                  <span className="font-semibold text-brand-dark">Taxa de adesão única
+                  {(() => {
+                    const total = totalModulos();
+                    if (total > 0 && total <= 100) {
+                      try { return `: R$ ${calcularEntrada(total).toFixed(2).replace(".", ",")}`; } catch { return ""; }
+                    }
+                    return "";
+                  })()}</span>
+                  {" "}— equivale a 50% de uma limpeza avulsa e já inclui sua 1ª limpeza · contrato mínimo de 12 meses
                 </div>
 
                 <Button type="submit" size="lg" className="w-full mt-2" loading={loading}

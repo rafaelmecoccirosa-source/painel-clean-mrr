@@ -9,6 +9,9 @@ export type RelatoriosRow = {
   id: string;
   mes: string;
   kwh: number;
+  kwhEsperado: number | null;
+  economia: number | null;
+  alerta: string | null;
   eficiencia: number;
   status: 'novo' | 'lido';
   pdfUrl: string | null;
@@ -23,7 +26,20 @@ type Props = {
 const pt = (n: number) => n.toLocaleString('pt-BR');
 
 async function abrirPdf(row: RelatoriosRow) {
-  if (row.pdfUrl) window.open(row.pdfUrl, '_blank');
+  if (row.pdfUrl) {
+    window.open(row.pdfUrl, '_blank');
+  } else {
+    // Sem PDF pré-gerado: gera na hora no navegador (jsPDF)
+    const { gerarRelatorioMensalPdf } = await import('@/lib/report-pdf');
+    await gerarRelatorioMensalPdf({
+      mes: row.mes,
+      kwh: row.kwh,
+      kwhEsperado: row.kwhEsperado,
+      eficiencia: row.eficiencia,
+      economia: row.economia,
+      alerta: row.alerta,
+    });
+  }
   if (row.status === 'novo') {
     const supabase = createClient();
     await supabase

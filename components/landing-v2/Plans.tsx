@@ -36,7 +36,7 @@ export default function Plans() {
       ideal: 'Residência média/grande',
       dark: false,
       features: [
-        '3 limpezas por ano',
+        '2 limpezas por ano',
         'Monitoramento 24/7',
         'Relatório fotográfico mensal',
         'Alerta proativo + semanal',
@@ -51,7 +51,7 @@ export default function Plans() {
       ideal: 'Comercial ou usina grande',
       dark: true,
       features: [
-        '4 limpezas por ano',
+        '2 limpezas por ano',
         'Monitoramento 24/7 + API',
         'Relatório fotográfico mensal',
         'Alerta proativo instantâneo',
