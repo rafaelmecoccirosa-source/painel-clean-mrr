@@ -1,4 +1,9 @@
-import { MVP_PRICING_ACTIVE } from "@/lib/config";
+import {
+  MVP_PRICING_ACTIVE,
+  REFERRAL_DISCOUNT_PER,
+  REFERRAL_MAX_DISCOUNT,
+  CONTRACT_MONTHS,
+} from "@/lib/config";
 
 // === FAIXAS DE PREÇO POR PLACA — v2 (tabela oficial Painel Clean) ===
 
@@ -26,7 +31,10 @@ export function calcularPrecoAvulso(modules: number): number {
   return modules * valorPorPlaca;
 }
 
-/** 1ª limpeza: 50% do preço avulso */
+/**
+ * Taxa de adesão da assinatura: 50% do preço avulso equivalente.
+ * Cobrada uma única vez na contratação e já inclui a 1ª limpeza.
+ */
 export function calcularEntrada(modules: number): number {
   return calcularPrecoAvulso(modules) * 0.50;
 }
@@ -34,6 +42,42 @@ export function calcularEntrada(modules: number): number {
 /** Limpeza extra para assinante: 40% de desconto (60% do avulso) */
 export function calcularLimpezaExtra(modules: number): number {
   return calcularPrecoAvulso(modules) * 0.60;
+}
+
+/** Desconto de indicações: 6% por indicação ativa, teto de 30% (5 indicações) */
+export function descontoIndicacaoPct(indicacoesAtivas: number): number {
+  return Math.min(REFERRAL_MAX_DISCOUNT, indicacoesAtivas * REFERRAL_DISCOUNT_PER) * 100;
+}
+
+/** Mensalidade efetiva após desconto de indicações (pct em pontos percentuais, ex: 12) */
+export function mensalidadeComDesconto(priceMonthly: number, discountPct: number): number {
+  const pct = Math.min(Math.max(discountPct, 0), REFERRAL_MAX_DISCOUNT * 100);
+  return Math.round(priceMonthly * (1 - pct / 100) * 100) / 100;
+}
+
+/**
+ * Saldo devedor de cancelamento antes da carência:
+ * meses restantes do contrato × mensalidade efetiva.
+ */
+export function calcularSaldoDevedor(
+  startedAt: Date,
+  priceMonthly: number,
+  discountPct = 0,
+  contractMonths = CONTRACT_MONTHS,
+): { mesesUsados: number; mesesRestantes: number; saldo: number } {
+  const now = new Date();
+  const mesesUsados = Math.max(0,
+    (now.getFullYear() - startedAt.getFullYear()) * 12 +
+    (now.getMonth() - startedAt.getMonth()) -
+    (now.getDate() < startedAt.getDate() ? 1 : 0),
+  );
+  const mesesRestantes = Math.max(0, contractMonths - mesesUsados);
+  const mensal = mensalidadeComDesconto(priceMonthly, discountPct);
+  return {
+    mesesUsados,
+    mesesRestantes,
+    saldo: Math.round(mesesRestantes * mensal * 100) / 100,
+  };
 }
 
 /** Sugere plano com base no nº de módulos */
