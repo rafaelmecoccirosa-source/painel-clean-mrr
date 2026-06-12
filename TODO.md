@@ -11,10 +11,10 @@
 - [ ] Reagendar — confirmar se salva no banco (next_service_at atualiza com data nova)
 - [ ] Landing /v2 — contadores animados mostrando 0 (ajustar valores iniciais hardcoded)
 - [ ] Landing /v2 — "Placas sujas perdem até 0%" — bug na calculadora
-- [ ] Cancelamento — botão existe mas fluxo incompleto (modal criado, falta testar)
 - [ ] Notificação pro admin quando chega pedido novo — tarefa pendente
 - [ ] Mapa admin — erro supabaseUrl no build (SUPABASE_SERVICE_ROLE_KEY vazio)
-- [ ] Limpeza extra para assinantes — preços avulso desatualizados no CLAUDE.md (até 15mod=R$35, não R$30)
+- [x] Migration `20260612_business_model.sql` aplicada no Supabase em 12/06 (invoices, referral_code, storage bucket, fix RLS)
+- [ ] Economia unitária: validar margem das limpezas de assinatura (repasse R$13/módulo × mensalidades) — no teto dos planos a margem fica negativa
 
 ---
 
@@ -27,15 +27,16 @@
 - [ ] Notificação pro cliente quando técnico aceita chamado
 
 ### Dashboard cliente
-- [ ] Indicações — link de indicação funcional (rastrear conversão real)
-- [ ] Relatórios — PDF real (MVP: admin gera manualmente)
+- [x] Indicações — link de indicação funcional (/ref/CODIGO + cookie + vínculo no cadastro + desconto real na mensalidade)
+- [x] Relatórios — PDF gerado no navegador (jsPDF, identidade da marca) via lib/report-pdf.ts
+- [ ] PDF premium (próxima rodada): fotos antes/depois do service_report, gráfico de evolução 6–12 meses, assinatura do técnico
 - [ ] Verificar responsivo nas páginas internas (relatórios, histórico, indicações)
 
 ### Dashboard técnico e admin
 - [ ] Briefing Claude Design — layout visual para técnico e admin
-- [ ] Conclusão de serviço — upload de fotos real (hoje aceita só URL)
+- [x] Conclusão de serviço — upload de fotos real via Supabase Storage (bucket service-photos)
 - [ ] Aprovação de técnicos — checklist antes de aprovar
-- [ ] Relatório mensal — interface para admin preencher manualmente (MVP)
+- [x] Relatório mensal — interface para admin preencher manualmente (/admin/relatorio-mensal)
 
 ### Login e cadastro
 - [ ] Visual do login — alinhar com tokens da landing v2
@@ -65,8 +66,10 @@
 
 - [ ] Configurar domínio customizado no Vercel
 - [ ] Auditoria de acessibilidade
-- [ ] Pagamento — MVP: PIX manual por email | Pós-MVP: Mercado Pago
+- [x] Pagamento MVP — faturas (invoices) + cron de billing + admin marca PIX recebido em /admin/pagamentos
+- [ ] Pós-MVP: Mercado Pago (PIX automático + cartão)
 - [ ] SUPABASE_SERVICE_ROLE_KEY no .env.local (build warnings)
+- [ ] Servidor de email (Resend) — quando for implementar o app de verdade; por enquanto notificações in-app
 
 ---
 
@@ -74,10 +77,26 @@
 
 - [ ] Integração Mercado Pago (PIX + cartão + débito recorrente)
 - [ ] Integração API inversores (Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye)
-- [ ] Geração automática de PDF de relatório com fotos antes/depois
+- [ ] PDF premium do relatório mensal — fotos antes/depois embutidas, gráfico de evolução, assinatura do técnico (base já existe em lib/report-pdf.ts)
 - [x] Renomear repo ativo para painel-clean-mrr (feito — painel-clean-mrr.vercel.app)
 
 ---
+
+## CONCLUÍDO — Sessão 2026-06-12 (regras de negócio MRR)
+
+- [x] Migration `20260612_business_model.sql` — invoices, discount_pct/cancelled_at/cancellation_fee em subscriptions, referral_code em profiles (trigger), fix RLS admin UPDATE profiles, condição 'excelente' em service_reports, bucket service-photos
+- [x] Preço da avulsa recalculado no servidor (`/api/cliente/avulsa`) — fecha brecha de preço manipulável
+- [x] Cron de billing (`/api/cron/billing`, 09h) — gera fatura de mensalidade com desconto de indicações, expira referrals
+- [x] Taxa de adesão — fatura gerada em `/api/cliente/pos-assinatura` + copy nos cadastros
+- [x] Indicações end-to-end — rota `/ref/CODIGO`, vínculo no cadastro, ativação, desconto em subscriptions.discount_pct
+- [x] Cancelamento com saldo devedor — `/api/cliente/cancelar` + modal em /cliente/plano
+- [x] /cliente/plano com dados reais (antes era 100% mock com cartão falso) + fallback demo com badge
+- [x] Admin /admin/pagamentos — aba Mensalidades (faturas) com "marcar PIX recebido"
+- [x] Admin /admin/relatorio-mensal — UI para preencher relatório mensal (notifica cliente)
+- [x] Upload real de fotos antes/depois no Supabase Storage (conclusão do técnico)
+- [x] Fix: service_report com condição 'excelente' era rejeitado pelo CHECK e o erro era engolido
+- [x] Plus = 2 limpezas/ano (corrigido aqui e em /cliente/plano)
+- [x] CLAUDE.md atualizado (repasse R$13/módulo, taxa de adesão, invoices, crons)
 
 ## CONCLUÍDO — Sessões de maio 2026
 
@@ -145,12 +164,12 @@
 
 - **Modelo:** assinatura mensal (Netflix) com avulso como secundário
 - **Planos:** Básico R$30/≤15mod · Padrão R$50/16-30mod · Plus R$100/31-60mod · Pro/Business sob consulta
-- **Limpezas:** basic/standard=2/ano · plus=4/ano · 1ª limpeza 50% off · contrato 12 meses
+- **Limpezas:** TODOS os planos = 2/ano (basic/standard/plus) · taxa de adesão = 50% do avulso (inclui 1ª limpeza) · contrato 12 meses
 - **Cancelamento:** paga saldo devedor do período restante
 - **Limpeza extra:** 40% off avulso para assinantes
 - **Preços avulso:** até 15mod=R$35 · 16-30=R$30 · 31-50=R$25 · 51-100=R$20
 - **Indicações:** +6% por indicação · máximo 30% (5 indicações) · válido 12 meses
-- **Comissão:** 25% plataforma / 75% técnico — nunca mostrar na landing ou dashboard cliente
+- **Repasse técnico:** R$ 13/módulo fixo (modelo % descontinuado em jun/2026) — nunca mostrar na landing ou dashboard cliente
 - **Pagamento MVP:** PIX manual por email | Pós-MVP: Mercado Pago
 - **Avulsa:** página própria 3 steps | Reagendar: modal na home
 - **Hero cliente:** 5 estados (healthy/post_cleaning/soon/drop/report)

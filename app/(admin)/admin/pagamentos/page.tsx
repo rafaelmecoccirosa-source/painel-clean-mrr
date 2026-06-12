@@ -117,7 +117,50 @@ const MOCK_PAYMENTS: ServiceRequestDB[] = [
   },
 ];
 
-type Tab = "awaiting" | "confirmed" | "all";
+type Tab = "awaiting" | "confirmed" | "all" | "invoices";
+
+// ── Invoices (mensalidades / adesão / cancelamento) ───────────────────────────
+
+type InvoiceRow = {
+  id: string;
+  client_id: string;
+  clientName: string;
+  type: "mensalidade" | "adesao" | "cancelamento";
+  amount: number;
+  period_month: number | null;
+  period_year: number | null;
+  due_date: string;
+  status: "pending" | "awaiting_confirmation" | "paid" | "cancelled";
+  paid_at: string | null;
+  notes: string | null;
+};
+
+const INVOICE_TYPE_LABELS: Record<InvoiceRow["type"], string> = {
+  mensalidade:  "Mensalidade",
+  adesao:       "Taxa de adesão",
+  cancelamento: "Saldo de cancelamento",
+};
+
+const MONTHS_SHORT = ["jan", "fev", "mar", "abr", "mai", "jun",
+  "jul", "ago", "set", "out", "nov", "dez"];
+
+function InvoiceStatusBadge({ status, overdue }: { status: InvoiceRow["status"]; overdue: boolean }) {
+  if (status === "pending" && overdue) {
+    return <span className="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap bg-red-100 text-red-700">🚨 Vencida</span>;
+  }
+  const map: Record<InvoiceRow["status"], { label: string; cls: string }> = {
+    pending:               { label: "💰 Em aberto",   cls: "bg-amber-100 text-amber-700" },
+    awaiting_confirmation: { label: "⏳ Em análise",  cls: "bg-amber-100 text-amber-700" },
+    paid:                  { label: "✅ Paga",        cls: "bg-emerald-100 text-emerald-700" },
+    cancelled:             { label: "— Cancelada",    cls: "bg-gray-100 text-gray-600" },
+  };
+  const s = map[status];
+  return (
+    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
 
 function PaymentStatusBadge({ status }: { status: PaymentStatus | undefined }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -136,6 +179,7 @@ function PaymentStatusBadge({ status }: { status: PaymentStatus | undefined }) {
 
 export default function PagamentosAdminPage() {
   const [services, setServices] = useState<ServiceRequestDB[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [isReal,   setIsReal]   = useState(false);
   const [tab, setTab]           = useState<Tab>("awaiting");
@@ -165,6 +209,36 @@ export default function PagamentosAdminPage() {
       } else {
         setServices(data as ServiceRequestDB[]);
         setIsReal(true);
+      }
+
+      // Mensalidades / adesão / cancelamento (tabela invoices)
+      const { data: invRows } = await supabase
+        .from("invoices")
+        .select("*")
+        .order("due_date", { ascending: true });
+
+      if (invRows && invRows.length > 0) {
+        const clientIds = Array.from(new Set(invRows.map((i) => i.client_id)));
+        const nameMap: Record<string, string> = {};
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", clientIds);
+        (profiles ?? []).forEach((p) => { nameMap[p.user_id] = p.full_name ?? "—"; });
+
+        setInvoices(invRows.map((i) => ({
+          id: i.id,
+          client_id: i.client_id,
+          clientName: nameMap[i.client_id] ?? "—",
+          type: i.type,
+          amount: Number(i.amount),
+          period_month: i.period_month,
+          period_year: i.period_year,
+          due_date: i.due_date,
+          status: i.status,
+          paid_at: i.paid_at,
+          notes: i.notes,
+        })));
       }
     } catch {
       setServices(MOCK_PAYMENTS);
@@ -235,16 +309,40 @@ export default function PagamentosAdminPage() {
     }
   }
 
+  async function handleInvoicePaid(id: string) {
+    setBusy(id);
+    try {
+      const supabase = createClient();
+      const paidAt = new Date().toISOString();
+      await supabase
+        .from("invoices")
+        .update({ status: "paid", paid_at: paidAt })
+        .eq("id", id);
+
+      setInvoices((prev) => prev.map((i) =>
+        i.id === id ? { ...i, status: "paid" as const, paid_at: paidAt } : i
+      ));
+      showToast("✅ Fatura marcada como paga!");
+    } catch {
+      showToast("Erro ao marcar fatura. Tente novamente.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const awaiting  = services.filter((s) => s.payment_status === "awaiting_confirmation");
   const confirmed = services.filter((s) => s.payment_status === "confirmed");
   const allDone   = services;
 
-  const shown: Record<Tab, ServiceRequestDB[]> = { awaiting, confirmed, all: allDone };
+  const openInvoices = invoices.filter((i) => i.status === "pending" || i.status === "awaiting_confirmation");
+
+  const shown: Record<Exclude<Tab, "invoices">, ServiceRequestDB[]> = { awaiting, confirmed, all: allDone };
 
   const tabs: { key: Tab; label: string; count: number; dot?: boolean }[] = [
     { key: "awaiting",  label: "Aguardando confirmação", count: awaiting.length,  dot: awaiting.length > 0 },
     { key: "confirmed", label: "Confirmados",            count: confirmed.length                           },
     { key: "all",       label: "Todos",                  count: allDone.length                             },
+    { key: "invoices",  label: "Mensalidades",           count: invoices.length,  dot: openInvoices.length > 0 },
   ];
 
   return (
@@ -338,6 +436,26 @@ export default function PagamentosAdminPage() {
             </div>
           ))}
         </div>
+      ) : tab === "invoices" ? (
+        invoices.length === 0 ? (
+          <div className="card text-center py-14">
+            <p className="text-3xl mb-3">💳</p>
+            <p className="text-brand-muted text-sm">
+              Nenhuma fatura gerada ainda. O cron diário de billing cria as mensalidades quando vencem.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {invoices.map((inv) => (
+              <InvoiceCard
+                key={inv.id}
+                invoice={inv}
+                busy={busy === inv.id}
+                onPaid={() => handleInvoicePaid(inv.id)}
+              />
+            ))}
+          </div>
+        )
       ) : shown[tab].length === 0 ? (
         <div className="card text-center py-14">
           <p className="text-3xl mb-3">💸</p>
@@ -357,6 +475,75 @@ export default function PagamentosAdminPage() {
               onRelease={() => handleRelease(s.id)}
             />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Invoice Card (mensalidades) ──────────────────────────────────────────────
+
+function InvoiceCard({
+  invoice: inv,
+  busy,
+  onPaid,
+}: {
+  invoice: InvoiceRow;
+  busy: boolean;
+  onPaid: () => void;
+}) {
+  const overdue = inv.status === "pending" && new Date(inv.due_date) < new Date();
+  const period = inv.period_month && inv.period_year
+    ? `${MONTHS_SHORT[inv.period_month - 1]}/${inv.period_year}`
+    : null;
+  const [y, m, d] = inv.due_date.split("-");
+
+  return (
+    <div className="bg-white border border-brand-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-xs text-brand-muted font-mono mb-1">#{inv.id.slice(0, 8).toUpperCase()}</p>
+            <p className="font-semibold text-brand-dark">{inv.clientName}</p>
+            <p className="text-xs text-brand-muted mt-0.5">
+              {INVOICE_TYPE_LABELS[inv.type]}{period ? ` · ${period}` : ""}
+            </p>
+          </div>
+          <InvoiceStatusBadge status={inv.status} overdue={overdue} />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="bg-brand-bg rounded-xl px-3 py-2.5">
+            <p className="text-[10px] text-brand-muted uppercase tracking-wide">Valor</p>
+            <p className="font-bold text-brand-dark text-sm mt-0.5">{fmt(inv.amount)}</p>
+          </div>
+          <div className="bg-brand-bg rounded-xl px-3 py-2.5">
+            <p className="text-[10px] text-brand-muted uppercase tracking-wide">Vencimento</p>
+            <p className={`font-bold text-sm mt-0.5 ${overdue ? "text-red-600" : "text-brand-dark"}`}>
+              {d}/{m}/{y}
+            </p>
+          </div>
+          <div className="bg-brand-bg rounded-xl px-3 py-2.5">
+            <p className="text-[10px] text-brand-muted uppercase tracking-wide">Pago em</p>
+            <p className="font-medium text-brand-dark text-xs mt-0.5">
+              {inv.paid_at ? fmtDateTime(inv.paid_at) : "—"}
+            </p>
+          </div>
+        </div>
+
+        {inv.notes && <p className="text-xs text-brand-muted">{inv.notes}</p>}
+      </div>
+
+      {(inv.status === "pending" || inv.status === "awaiting_confirmation") && (
+        <div className="px-5 pb-5">
+          <button
+            onClick={onPaid}
+            disabled={busy}
+            className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-brand-green text-white hover:bg-brand-green/90 rounded-xl py-2.5 transition-colors disabled:opacity-50"
+          >
+            <CheckCircle2 size={15} />
+            {busy ? "Processando…" : "✅ Marcar PIX como recebido"}
+          </button>
         </div>
       )}
     </div>

@@ -13,7 +13,7 @@ const PLAN_LABEL: Record<string, string> = {
 const PLAN_LIMPEZAS: Record<string, number> = {
   basic:    2,
   standard: 2,
-  plus:     4,
+  plus:     2,
 };
 
 const MONTH_NAMES = [

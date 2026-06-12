@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/admin/servicos",    label: "Serviços",   emoji: "🔧" },
   { href: "/admin/pagamentos",  label: "Pagamentos", emoji: "💰" },
   { href: "/admin/relatorios",  label: "Relatórios", emoji: "📈" },
+  { href: "/admin/relatorio-mensal", label: "Rel. Mensal", emoji: "📋" },
   { href: "/admin/mapa",        label: "Mapa",       emoji: "🗺️" },
 ];
 

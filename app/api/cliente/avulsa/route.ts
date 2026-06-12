@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { calcularLimpezaExtra } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,6 @@ type Body = {
   preferred_date?: string;
   preferred_time?: "manha" | "tarde";
   notes?: string;
-  price_estimate?: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { preferred_date, preferred_time, notes, price_estimate } = body;
+  const { preferred_date, preferred_time, notes } = body;
   if (!preferred_date || !preferred_time) {
     return NextResponse.json(
       { error: "Data e turno são obrigatórios" },
@@ -72,6 +72,18 @@ export async function POST(req: NextRequest) {
     ? `CEP ${profile.cep}, ${city} (endereço a confirmar com o cliente)`
     : `${city} (endereço a confirmar com o cliente)`;
 
+  // Preço SEMPRE calculado no servidor — nunca confiar no valor vindo do client.
+  // Assinante ativo paga limpeza extra com 40% off sobre o avulso.
+  let priceEstimate: number;
+  try {
+    priceEstimate = calcularLimpezaExtra(modules);
+  } catch {
+    return NextResponse.json(
+      { error: "Usinas com mais de 100 módulos: preço sob consulta. Fale com a equipe." },
+      { status: 400 },
+    );
+  }
+
   // 3. Insert with service role (bypasses the recursive profiles RLS check)
   const { data: inserted, error: insertErr } = await admin
     .from("service_requests")
@@ -85,7 +97,7 @@ export async function POST(req: NextRequest) {
       preferred_date,
       preferred_time,
       notes:          notes?.trim() || null,
-      price_estimate: typeof price_estimate === "number" ? price_estimate : 0,
+      price_estimate: priceEstimate,
     })
     .select("id")
     .single();
