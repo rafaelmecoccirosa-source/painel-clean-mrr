@@ -13,7 +13,7 @@
 - [ ] Landing /v2 — "Placas sujas perdem até 0%" — bug na calculadora
 - [ ] Notificação pro admin quando chega pedido novo — tarefa pendente
 - [ ] Mapa admin — erro supabaseUrl no build (SUPABASE_SERVICE_ROLE_KEY vazio)
-- [ ] ⚠️ APLICAR no Supabase a migration `20260612_business_model.sql` (invoices, referral_code, storage bucket, fix RLS) — nada do fluxo de billing/indicações funciona sem ela
+- [x] Migration `20260612_business_model.sql` aplicada no Supabase em 12/06 (invoices, referral_code, storage bucket, fix RLS)
 - [ ] Economia unitária: validar margem das limpezas de assinatura (repasse R$13/módulo × mensalidades) — no teto dos planos a margem fica negativa
 
 ---
@@ -28,7 +28,8 @@
 
 ### Dashboard cliente
 - [x] Indicações — link de indicação funcional (/ref/CODIGO + cookie + vínculo no cadastro + desconto real na mensalidade)
-- [ ] Relatórios — PDF real (MVP: admin gera manualmente)
+- [x] Relatórios — PDF gerado no navegador (jsPDF, identidade da marca) via lib/report-pdf.ts
+- [ ] PDF premium (próxima rodada): fotos antes/depois do service_report, gráfico de evolução 6–12 meses, assinatura do técnico
 - [ ] Verificar responsivo nas páginas internas (relatórios, histórico, indicações)
 
 ### Dashboard técnico e admin
@@ -76,7 +77,7 @@
 
 - [ ] Integração Mercado Pago (PIX + cartão + débito recorrente)
 - [ ] Integração API inversores (Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye)
-- [ ] Geração automática de PDF de relatório com fotos antes/depois
+- [ ] PDF premium do relatório mensal — fotos antes/depois embutidas, gráfico de evolução, assinatura do técnico (base já existe em lib/report-pdf.ts)
 - [x] Renomear repo ativo para painel-clean-mrr (feito — painel-clean-mrr.vercel.app)
 
 ---

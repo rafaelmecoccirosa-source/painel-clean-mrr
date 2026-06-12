@@ -380,7 +380,8 @@ created_at    timestamptz DEFAULT now()
 
 ### 2. Relatório mensal de performance (`monthly_reports`)
 - **Quando:** todo mês, independente de ter havido limpeza
-- **Quem preenche:** MVP = admin preenche manualmente. Pós-MVP = automático via API do inversor
+- **Quem preenche:** MVP = admin preenche manualmente em `/admin/relatorio-mensal`. Pós-MVP = automático via API do inversor
+- **PDF:** gerado no navegador via `lib/report-pdf.ts` (jsPDF, identidade da marca) quando `report_pdf_url` é null. Versão premium (fotos antes/depois + gráfico de evolução + assinatura do técnico) é pendência pós-MVP
 - **Conteúdo:** kWh gerado vs esperado, eficiência %, economia estimada, alerta se queda detectada
 - **Inversores compatíveis (pós-MVP):** Fronius, SolarEdge, Growatt, Sungrow, Hoymiles, Deye
 - **Visível para:** cliente (aba Relatórios no dashboard)
