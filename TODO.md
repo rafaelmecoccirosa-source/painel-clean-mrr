@@ -9,8 +9,7 @@
 ## PENDENTES — Bugs e ajustes
 
 - [ ] Reagendar — confirmar se salva no banco (next_service_at atualiza com data nova)
-- [ ] Landing /v2 — contadores animados mostrando 0 (ajustar valores iniciais hardcoded)
-- [ ] Landing /v2 — "Placas sujas perdem até 0%" — bug na calculadora
+- [x] Landing — contadores zerados e "0%" na calculadora (causa real: erro de hidratação no `<style>` do Hero, `>` escapado como `&gt;` no SSR — corrigido em 12/06)
 - [ ] Notificação pro admin quando chega pedido novo — tarefa pendente
 - [ ] Mapa admin — erro supabaseUrl no build (SUPABASE_SERVICE_ROLE_KEY vazio)
 - [x] Migration `20260612_business_model.sql` aplicada no Supabase em 12/06 (invoices, referral_code, storage bucket, fix RLS)
@@ -44,7 +43,8 @@
 - [ ] Verificar se "completar-cadastro" ainda aparece indevidamente
 
 ### Landing
-- [ ] Corrigir contadores zerados e bug da calculadora
+- [x] Corrigir contadores zerados e bug da calculadora (fix de hidratação no Hero, 12/06)
+- [x] Favicon adicionado (app/icon.png com o ícone da marca)
 - [ ] Promover /v2 → / após aprovação final
 
 ---
@@ -81,6 +81,12 @@
 - [x] Renomear repo ativo para painel-clean-mrr (feito — painel-clean-mrr.vercel.app)
 
 ---
+
+## CONCLUÍDO — Sessão 2026-06-12 (landing)
+
+- [x] Fix de hidratação na landing — `<style>` inline do Hero com seletores `>` era escapado como `&gt;` no SSR, o React descartava o HTML do servidor e re-renderizava a página inteira (contadores presos em 0, calculadora congelada). Corrigido com `dangerouslySetInnerHTML`
+- [x] Favicon — `app/icon.png` (ícone da marca; antes era 404)
+- [x] Verificado em headless Chrome (desktop 1280px e mobile 390px): zero erros de console, contadores animando até os valores finais, calculadora com "30% de perda"
 
 ## CONCLUÍDO — Sessão 2026-06-12 (regras de negócio MRR)
 

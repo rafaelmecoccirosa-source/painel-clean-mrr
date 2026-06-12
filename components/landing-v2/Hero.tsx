@@ -185,7 +185,9 @@ export default function Hero() {
         </div>
       </div>
 
-      <style>{`
+      {/* dangerouslySetInnerHTML: o ">" dos seletores era escapado como &gt; no
+          SSR e quebrava a hidratação da página inteira (contadores travados em 0) */}
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -224,7 +226,7 @@ export default function Hero() {
             order: 1 !important;
           }
         }
-      `}</style>
+      ` }} />
     </section>
   )
 }
