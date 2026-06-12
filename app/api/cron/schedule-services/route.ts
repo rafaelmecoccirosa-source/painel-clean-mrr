@@ -4,7 +4,6 @@ import { createServiceClient } from "@/lib/supabase/service";
 export const dynamic = "force-dynamic";
 
 const SEVEN_DAYS_MS  = 7  * 24 * 60 * 60 * 1000;
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 type SubscriptionRow = {
   id: string;
@@ -43,7 +42,6 @@ export async function GET(req: NextRequest) {
   const admin = createServiceClient();
   const now = new Date();
   const horizon = new Date(now.getTime() + SEVEN_DAYS_MS).toISOString();
-  const recentCutoff = new Date(now.getTime() - THIRTY_DAYS_MS).toISOString();
 
   const { data: subs, error: subsErr } = await admin
     .from("subscriptions")
@@ -79,8 +77,7 @@ export async function GET(req: NextRequest) {
     .select("client_id")
     .eq("origin", "subscription")
     .in("client_id", clientIds)
-    .in("status", ["pending", "accepted", "in_progress"])
-    .gte("created_at", recentCutoff);
+    .in("status", ["pending", "accepted", "in_progress"]);
   const blockedClients = new Set(
     ((existing ?? []) as ExistingRequestRow[]).map((r) => r.client_id),
   );
