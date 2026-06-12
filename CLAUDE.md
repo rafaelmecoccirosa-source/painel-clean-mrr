@@ -155,11 +155,12 @@ Plataforma de limpeza de placas solares no modelo **assinatura recorrente (Netfl
 | Pro | sob consulta | 61–200 | customizado |
 | Business | sob consulta | 200+ | customizado |
 
-### Entrada e contrato
-- **1ª limpeza:** 50% do preço avulso equivalente (desconto de entrada para converter)
+### Taxa de adesão e contrato
+- **Taxa de adesão:** 50% do preço avulso equivalente, cobrada uma única vez na contratação — **já inclui a 1ª limpeza**. Comunicar sempre como "taxa de adesão" (não como "desconto na 1ª limpeza")
+- Fatura de adesão gerada automaticamente via `/api/cliente/pos-assinatura` (tabela `invoices`, `type='adesao'`)
 - A partir do mês seguinte: mensalidade normal do plano
 - Contrato mínimo **12 meses com carência**
-- Cancelamento: paga saldo devedor do período restante
+- Cancelamento antes da carência: paga saldo devedor (meses restantes × mensalidade efetiva) — fluxo em `/cliente/plano` + `/api/cliente/cancelar`, gera fatura `type='cancelamento'`
 - **Objetivo estratégico do avulso:** existe como âncora de preço para tornar a assinatura obviamente vantajosa — não é o produto principal
 
 ### Preços avulso (sem assinatura)
@@ -181,9 +182,14 @@ Faixa regressiva por quantidade de módulos:
 - 5 indicações = **30% de desconto** (máximo)
 - Créditos válidos por **12 meses** da data da indicação
 - Tabela: 1 ind=6% | 2 ind=12% | 3 ind=18% | 4 ind=24% | 5 ind=30%
+- **Fluxo implementado:** link `/ref/CODIGO` (cookie 30 dias) → cadastro → `/api/cliente/pos-assinatura` vincula o referral, ativa e grava o desconto em `subscriptions.discount_pct`. O cron de billing aplica o desconto na fatura e expira referrals vencidos
+- Código de indicação: `profiles.referral_code` (gerado por trigger no insert)
 
-### Comissão técnico (NÃO mostrar na landing nem dashboard cliente)
-- Plataforma: 25% | Técnico (repasse): 75%
+### Repasse ao técnico (NÃO mostrar na landing nem dashboard cliente)
+- **R$ 13 por módulo limpo** — valor fixo (`PAGAMENTO_POR_PAINEL` em `lib/pricing.ts`)
+- Margem da plataforma = preço cobrado do cliente − repasse
+- ⚠️ O modelo antigo de percentual (25%/75%) foi descontinuado em jun/2026 — não usar
+- ⚠️ Economia unitária: nas limpezas de assinatura o repasse sai da mensalidade — monitorar margem por plano
 
 ### Calculadora de perda (landing MRR)
 ```typescript
@@ -238,8 +244,34 @@ next_billing_at  timestamp
 next_service_at  timestamp
 inverter_brand   text  -- 'fronius'|'solarEdge'|'growatt'|'sungrow'|'hoymiles'|'deye'
 inverter_api_key text  -- pós-MVP
+discount_pct     numeric DEFAULT 0  -- desconto de indicações (0–30), aplicado pelo cron de billing
+cancelled_at     timestamp          -- nullable — quando cancelou
+cancellation_fee numeric            -- saldo devedor registrado no cancelamento
+contract_months  int DEFAULT 12     -- carência do contrato
 created_at       timestamp
 ```
+
+### Tabela `invoices` (faturas — mensalidade, adesão, cancelamento)
+Criada em jun/2026 (migration `20260612_business_model.sql`). MVP = PIX manual: o cron gera a fatura, o admin marca como paga em `/admin/pagamentos` (aba Mensalidades).
+
+```sql
+id               uuid PRIMARY KEY
+subscription_id  uuid REFERENCES subscriptions(id)
+client_id        uuid REFERENCES auth.users(id)
+type             text  -- CHECK: 'mensalidade' | 'adesao' | 'cancelamento'
+amount           numeric
+period_month     int   -- 1–12 (mensalidades)
+period_year      int
+due_date         date
+status           text  -- CHECK: 'pending' | 'awaiting_confirmation' | 'paid' | 'cancelled'
+paid_at          timestamp
+notes            text
+created_at       timestamp
+```
+- Geração: cron diário `/api/cron/billing` (processa `next_billing_at`, aplica `discount_pct`, expira referrals)
+- Adesão: `/api/cliente/pos-assinatura` logo após criar a assinatura
+- Cancelamento: `/api/cliente/cancelar`
+- RLS: cliente SELECT própria fatura; escrita só admin/service role
 
 ### Tabela `service_requests`
 ```sql
@@ -489,14 +521,25 @@ Senha padrão: `Demo@2026!`
 SUBSCRIPTION_ENABLED = true
 AVULSO_ENABLED = true
 INVERTER_API_ENABLED = false        // pós-MVP — fase 3
-FIRST_SERVICE_DISCOUNT = 0.50       // 50% desconto na 1ª limpeza
-SUBSCRIBER_EXTRA_DISCOUNT = 0.40    // 40% desconto em limpezas extras p/ assinantes
+FIRST_SERVICE_DISCOUNT = 0.50       // taxa de adesão = 50% do avulso (inclui a 1ª limpeza)
 REFERRAL_DISCOUNT_PER = 0.06        // 6% por indicação
 REFERRAL_MAX_DISCOUNT = 0.30        // 30% máximo
 REFERRAL_VALIDITY_MONTHS = 12
-COMMISSION_PLATFORM = 0.25
-COMMISSION_TECNICO = 0.75
+CONTRACT_MONTHS = 12                // carência do contrato
+INVOICE_DUE_DAYS = 5                // vencimento das faturas (PIX manual)
+MVP_PRICING_ACTIVE = true           // 15% off no preço exibido (lançamento)
 ```
+- Repasse ao técnico: `PAGAMENTO_POR_PAINEL = 13` em `lib/pricing.ts` (R$ 13/módulo)
+- Desconto de limpeza extra do assinante (40%) está em `calcularLimpezaExtra()` de `lib/pricing.ts`
+
+## Crons (vercel.json)
+
+| Rota | Horário | Função |
+|------|---------|--------|
+| `/api/cron/schedule-services` | 08h diário | cria service_requests das limpezas de assinatura (next_service_at, ciclo 6 meses) |
+| `/api/cron/billing` | 09h diário | gera faturas de mensalidade (next_billing_at), aplica desconto de indicações, expira referrals |
+
+Ambos autenticados via `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 
