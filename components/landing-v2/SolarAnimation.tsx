@@ -110,7 +110,12 @@ export default function SolarAnimation({
     const CAM_LOOK = new THREE.Vector3()
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+    } catch {
+      return // WebGL unavailable — CSS gradient fallback already visible on container
+    }
     renderer.setPixelRatio(dpr)
     renderer.setSize(W, H)
     renderer.setClearColor(0x000000, 0)
@@ -440,5 +445,15 @@ export default function SolarAnimation({
     }
   }, [palette, speed, bloom, glow, density, height, parallax])
 
-  return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+  const pal = PALETTES[palette] || PALETTES.green
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: `radial-gradient(ellipse at 62% 38%, ${pal.back0} 0%, ${pal.back1} 100%)`,
+      }}
+    />
+  )
 }
