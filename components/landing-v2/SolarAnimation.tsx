@@ -51,10 +51,10 @@ type ShaderLike = {
 }
 
 const PALETTES: Record<PaletteName, Palette> = {
-  green:  { stops: [0x0a2418, 0x12492a, 0x238a42, 0x39c45a], glow: 0x6dffa0, fog: 0x08251a, back0: '#0c3a29', back1: '#04130d' },
-  teal:   { stops: [0x07242a, 0x0d4651, 0x12909c, 0x28d6c4], glow: 0x5cf8e8, fog: 0x05201f, back0: '#0a3a40', back1: '#03110f' },
-  gold:   { stops: [0x271907, 0x523710, 0x9c7a22, 0xe0b23d], glow: 0xffd884, fog: 0x1c1406, back0: '#3a2a0c', back1: '#130d03' },
-  aurora: { stops: [0x0b1a2a, 0x143851, 0x2a6a8a, 0x39b0c4], glow: 0x7fe6ff, fog: 0x071622, back0: '#0c2f47', back1: '#030d16' },
+  green:  { stops: [0x0a2418, 0x12492a, 0x238a42, 0x39c45a], glow: 0x6dffa0, fog: 0x020a06, back0: '#051509', back1: '#010503' },
+  teal:   { stops: [0x07242a, 0x0d4651, 0x12909c, 0x28d6c4], glow: 0x5cf8e8, fog: 0x030f10, back0: '#051617', back1: '#010506' },
+  gold:   { stops: [0x271907, 0x523710, 0x9c7a22, 0xe0b23d], glow: 0xffd884, fog: 0x0c0903, back0: '#180f04', back1: '#080401' },
+  aurora: { stops: [0x0b1a2a, 0x143851, 0x2a6a8a, 0x39b0c4], glow: 0x7fe6ff, fog: 0x030810, back0: '#050f1e', back1: '#010408' },
 }
 
 const MOBILE_BP = 760
@@ -83,8 +83,8 @@ function radialTexture(hex: number) {
 export default function SolarAnimation({
   palette = 'green',
   speed = 0.7,
-  bloom = 1.5,
-  glow = 0.8,
+  bloom = 2.5,
+  glow = 1.4,
   density = 21,
   height = 1,
   parallax = 1,
@@ -103,7 +103,7 @@ export default function SolarAnimation({
 
     const scene = new THREE.Scene()
     let pal = PALETTES[P.palette] || PALETTES.green
-    scene.fog = new THREE.FogExp2(pal.fog, 0.019)
+    scene.fog = new THREE.FogExp2(pal.fog, 0.012)
 
     const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 400)
     const CAM_BASE = new THREE.Vector3()
@@ -115,7 +115,7 @@ export default function SolarAnimation({
     renderer.setSize(W, H)
     renderer.setClearColor(0x000000, 0)
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.08
+    renderer.toneMappingExposure = 1.3
     container.appendChild(renderer.domElement)
 
     const pmrem = new THREE.PMREMGenerator(renderer)
@@ -139,8 +139,8 @@ export default function SolarAnimation({
         '  float dx = vUv.x - uHead;',
         '  float band = exp(-dx*dx/(2.0*0.15*0.15));',
         '  float vert = smoothstep(1.0,0.05,vUv.y);',
-        '  col += cGlow * band * vert * 0.26 * uEnv;',
-        '  col += cGlow * exp(-dx*dx/(2.0*0.38*0.38)) * vert * 0.04 * uEnv;',
+        '  col += cGlow * band * vert * 0.55 * uEnv;',
+        '  col += cGlow * exp(-dx*dx/(2.0*0.38*0.38)) * vert * 0.14 * uEnv;',
         '  col *= 1.0 - 0.30*smoothstep(0.4,1.0,abs(vUv.x-0.5)*2.0);',
         '  gl_FragColor = vec4(col,1.0);',
         '}',
@@ -157,10 +157,10 @@ export default function SolarAnimation({
     scene.add(sun)
 
     // ── Luzes ────────────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0xbfe6cf, 0.34))
-    const key = new THREE.DirectionalLight(0xffffff, 1.9)
+    scene.add(new THREE.AmbientLight(0xbfe6cf, 0.18))
+    const key = new THREE.DirectionalLight(0xffffff, 2.4)
     key.position.set(-14, 22, 10); scene.add(key)
-    const rim = new THREE.DirectionalLight(0x39c45a, 0.8)
+    const rim = new THREE.DirectionalLight(0x39c45a, 1.2)
     rim.position.set(12, 8, -14); scene.add(rim)
     const fill = new THREE.DirectionalLight(0x8fd3ff, 0.22)
     fill.position.set(8, 6, 16); scene.add(fill)
@@ -288,7 +288,7 @@ export default function SolarAnimation({
     const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 })
     const composer = new EffectComposer(renderer, rt)
     composer.addPass(new RenderPass(scene, camera))
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.42, 0.74)
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.6, 0.28)
     composer.addPass(bloomPass)
     composer.addPass(new OutputPass())
     composer.setSize(W, H)
@@ -381,7 +381,7 @@ export default function SolarAnimation({
         else tc = cleanArr[i]
         cleanArr[i] += (tc - cleanArr[i]) * (tc > cleanArr[i] ? 0.1 : 0.05)
 
-        const shimmer = cleanArr[i] * (0.02 + 0.02 * Math.sin(t * 2.2 + diagArr[i] * 24 + i))
+        const shimmer = cleanArr[i] * (0.45 + 0.08 * Math.sin(t * 2.2 + diagArr[i] * 24 + i))
         const target = Math.max(beam * env, shimmer)
         litArr[i] += (target - litArr[i]) * 0.3
 
