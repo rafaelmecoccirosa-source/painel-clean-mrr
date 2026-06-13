@@ -1,185 +1,444 @@
 'use client'
+
+// ──────────────────────────────────────────────────────────────
+// Painel Clean — Hero "solar activation" animation (v2)
+//
+// Grade de painéis. Um FEIXE de luz diagonal viaja pela grade; ao
+// chegar, os painéis sobem e ACENDEM (energizam) e a placa de vidro
+// de cima reflete o sol; atrás fica verde "limpo", à frente escuro
+// "poeira". Acabamento: vidro fotovoltaico (topo ≠ laterais), chão
+// reflexivo, fundo com luz que viaja em sync, bloom (MSAA HDR),
+// reinício sem flash, parallax no mouse.
+//
+// Drop-in: mesmo `export default` e mesmo container que a versão
+// anterior — o Hero.tsx não precisa mudar. Props são opcionais.
+// Deps já presentes no repo: three ^0.184 + @types/three.
+// ──────────────────────────────────────────────────────────────
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 
-export default function SolarAnimation() {
+type PaletteName = 'green' | 'teal' | 'gold' | 'aurora'
+
+type SolarProps = {
+  palette?: PaletteName
+  speed?: number
+  bloom?: number
+  glow?: number
+  density?: number
+  height?: number
+  parallax?: number
+}
+
+type Palette = {
+  stops: number[]
+  glow: number
+  fog: number
+  back0: string
+  back1: string
+}
+
+// Shader chunk patcher (apenas os campos que tocamos)
+type ShaderLike = {
+  uniforms: Record<string, { value: unknown }>
+  vertexShader: string
+  fragmentShader: string
+}
+
+const PALETTES: Record<PaletteName, Palette> = {
+  green:  { stops: [0x0a2418, 0x12492a, 0x238a42, 0x39c45a], glow: 0x6dffa0, fog: 0x08251a, back0: '#0c3a29', back1: '#04130d' },
+  teal:   { stops: [0x07242a, 0x0d4651, 0x12909c, 0x28d6c4], glow: 0x5cf8e8, fog: 0x05201f, back0: '#0a3a40', back1: '#03110f' },
+  gold:   { stops: [0x271907, 0x523710, 0x9c7a22, 0xe0b23d], glow: 0xffd884, fog: 0x1c1406, back0: '#3a2a0c', back1: '#130d03' },
+  aurora: { stops: [0x0b1a2a, 0x143851, 0x2a6a8a, 0x39b0c4], glow: 0x7fe6ff, fog: 0x071622, back0: '#0c2f47', back1: '#030d16' },
+}
+
+const MOBILE_BP = 760
+
+function lerpHex(a: number, b: number, t: number) {
+  return new THREE.Color(a).lerp(new THREE.Color(b), t)
+}
+function paletteColor(stops: number[], t: number) {
+  const n = stops.length - 1
+  const i = Math.min(Math.floor(t * n), n - 1)
+  return lerpHex(stops[i], stops[i + 1], t * n - i)
+}
+function radialTexture(hex: number) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256
+  const g = cv.getContext('2d')!
+  const rg = g.createRadialGradient(128, 128, 0, 128, 128, 128)
+  const c = new THREE.Color(hex)
+  const rgb = `${(c.r * 255) | 0},${(c.g * 255) | 0},${(c.b * 255) | 0}`
+  rg.addColorStop(0, `rgba(${rgb},0.55)`)
+  rg.addColorStop(0.5, `rgba(${rgb},0.16)`)
+  rg.addColorStop(1, `rgba(${rgb},0)`)
+  g.fillStyle = rg; g.fillRect(0, 0, 256, 256)
+  return new THREE.CanvasTexture(cv)
+}
+
+export default function SolarAnimation({
+  palette = 'green',
+  speed = 0.7,
+  bloom = 1.5,
+  glow = 0.8,
+  density = 21,
+  height = 1,
+  parallax = 1,
+}: SolarProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const W = container.offsetWidth
-    const H = container.offsetHeight
-    if (W === 0 || H === 0) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const isMobile = W < 640
+    const P = { palette, speed, bloom, glow, density, height, parallax }
+
+    let W = container.offsetWidth, H = container.offsetHeight
+    if (W === 0 || H === 0) { W = 1280; H = 720 }
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(isMobile ? 65 : 45, W/H, 1, 10000)
-    camera.position.set(
-      isMobile ?  96 : 160,
-      isMobile ? 215 : 221,
-      isMobile ? 260 : 574
-    )
-    camera.lookAt(
-      isMobile ? -201 : -408,
-      isMobile ? -200 : -200,
-      -40
-    )
+    let pal = PALETTES[P.palette] || PALETTES.green
+    scene.fog = new THREE.FogExp2(pal.fog, 0.019)
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 400)
+    const CAM_BASE = new THREE.Vector3()
+    const CAM_LOOK = new THREE.Vector3()
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(dpr)
     renderer.setSize(W, H)
     renderer.setClearColor(0x000000, 0)
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.08
     container.appendChild(renderer.domElement)
 
-    function makeRoundedBox(w: number, d: number, r: number) {
-      const s = new THREE.Shape()
-      s.moveTo(-w/2+r,-d/2); s.lineTo(w/2-r,-d/2)
-      s.quadraticCurveTo(w/2,-d/2,w/2,-d/2+r)
-      s.lineTo(w/2,d/2-r); s.quadraticCurveTo(w/2,d/2,w/2-r,d/2)
-      s.lineTo(-w/2+r,d/2); s.quadraticCurveTo(-w/2,d/2,-w/2,d/2-r)
-      s.lineTo(-w/2,-d/2+r); s.quadraticCurveTo(-w/2,-d/2,-w/2+r,-d/2)
-      return new THREE.ExtrudeGeometry(s, {
-        depth:1, bevelEnabled:true,
-        bevelSize:r*0.28, bevelThickness:r*0.28, bevelSegments:4
-      })
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+
+    // ── Backdrop com profundidade + LUZ QUE VIAJA (sync c/ feixe) ─
+    const backUniforms = {
+      c0: { value: new THREE.Color(pal.back0) },
+      c1: { value: new THREE.Color(pal.back1) },
+      cGlow: { value: new THREE.Color(pal.glow) },
+      uHead: { value: 0.5 },
+      uEnv: { value: 1 },
     }
+    const backMat = new THREE.ShaderMaterial({
+      uniforms: backUniforms, depthWrite: false, depthTest: false, fog: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+      fragmentShader: [
+        'varying vec2 vUv; uniform vec3 c0; uniform vec3 c1; uniform vec3 cGlow; uniform float uHead; uniform float uEnv;',
+        'void main(){',
+        '  vec3 col = mix(c1, c0, smoothstep(0.0,1.0,vUv.y)) * 0.55;',
+        '  float dx = vUv.x - uHead;',
+        '  float band = exp(-dx*dx/(2.0*0.15*0.15));',
+        '  float vert = smoothstep(1.0,0.05,vUv.y);',
+        '  col += cGlow * band * vert * 0.26 * uEnv;',
+        '  col += cGlow * exp(-dx*dx/(2.0*0.38*0.38)) * vert * 0.04 * uEnv;',
+        '  col *= 1.0 - 0.30*smoothstep(0.4,1.0,abs(vUv.x-0.5)*2.0);',
+        '  gl_FragColor = vec4(col,1.0);',
+        '}',
+      ].join('\n'),
+    })
+    const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(1200, 700), backMat)
+    backdrop.position.set(0, 60, -90); backdrop.renderOrder = -2
+    scene.add(backdrop)
 
-    const PALETTE = [
-      new THREE.Color(0x0C2B1C),
-      new THREE.Color(0x174D2A),
-      new THREE.Color(0x2A8A42),
-      new THREE.Color(0x3DC45A),
-      new THREE.Color(0x7FE89A),
-      new THREE.Color(0xA8EED4),
-    ]
-    function palColor(t: number) {
-      const n = PALETTE.length-1
-      const i = Math.min(Math.floor(t*n),n-1)
-      return PALETTE[i].clone().lerp(PALETTE[i+1],t*n-i)
+    // sol/halo grande que cruza o fundo junto com o feixe
+    const sunMat = new THREE.SpriteMaterial({ map: radialTexture(pal.glow), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0.2, fog: false })
+    const sun = new THREE.Sprite(sunMat)
+    sun.scale.set(105, 105, 1); sun.position.set(0, 26, -68); sun.renderOrder = -1
+    scene.add(sun)
+
+    // ── Luzes ────────────────────────────────────────────────────
+    scene.add(new THREE.AmbientLight(0xbfe6cf, 0.34))
+    const key = new THREE.DirectionalLight(0xffffff, 1.9)
+    key.position.set(-14, 22, 10); scene.add(key)
+    const rim = new THREE.DirectionalLight(0x39c45a, 0.8)
+    rim.position.set(12, 8, -14); scene.add(rim)
+    const fill = new THREE.DirectionalLight(0x8fd3ff, 0.22)
+    fill.position.set(8, 6, 16); scene.add(fill)
+
+    // ── Material: vidro fotovoltaico + glow emissivo (via shader) ─
+    const glowUniform = { value: new THREE.Color(pal.glow) }
+    const glowStrength = { value: 2.4 }
+    function patchShader(shader: ShaderLike) {
+      shader.uniforms.uGlow = glowUniform
+      shader.uniforms.uGlowStrength = glowStrength
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aLit;\nattribute float aClean;\nvarying float vLit;\nvarying float vBase;\nvarying float vClean;\nvarying vec3 vNrm;\nvarying vec3 vLoc;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLit = aLit;\nvClean = aClean;\nvBase = position.y + 0.5;\nvNrm = normal;\nvLoc = position;')
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vLit;\nvarying float vBase;\nvarying float vClean;\nvarying vec3 vNrm;\nvarying vec3 vLoc;\nuniform vec3 uGlow;\nuniform float uGlowStrength;\nfloat _topness(){ return smoothstep(0.55,0.92,vNrm.y); }')
+        // topo = vidro (mais liso e reflexivo); laterais = moldura fosca
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0, 0.4, _topness());')
+        .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.6, _topness());')
+        .replace('#include <color_fragment>',
+          '#include <color_fragment>\n' +
+          // poeira: dessaturado/escuro e amarronzado (sujo) → vibrante quando limpa
+          'float _lum = dot(diffuseColor.rgb, vec3(0.299,0.587,0.114));\n' +
+          'vec3 _dirty = mix(vec3(_lum * 0.9), vec3(0.15,0.13,0.09), 0.6) * 0.6;\n' +
+          'diffuseColor.rgb = mix(_dirty, diffuseColor.rgb * 1.08, clamp(vClean,0.0,1.0));\n' +
+          // placa de cima: vidro azulado + grade de células fotovoltaicas
+          'float _t = _topness();\n' +
+          'vec2 _cell = vLoc.xz * 3.4;\n' +
+          'vec2 _gg = abs(fract(_cell) - 0.5);\n' +
+          'float _grid = smoothstep(0.37, 0.5, max(_gg.x, _gg.y));\n' +
+          'vec3 _glass = diffuseColor.rgb * vec3(0.78, 0.94, 1.10);\n' +
+          '_glass = mix(_glass, _glass * 0.34, _grid);\n' +
+          'diffuseColor.rgb = mix(diffuseColor.rgb, _glass, _t);\n' +
+          'diffuseColor.rgb *= mix(0.26, 1.0, clamp(vBase,0.0,1.0));')
+        .replace('#include <emissivemap_fragment>',
+          '#include <emissivemap_fragment>\n' +
+          'float _top = _topness();\n' +
+          // energia VERDE subindo pelo corpo da barra
+          'float _en = pow(clamp(vLit,0.0,1.6),1.4);\n' +
+          'totalEmissiveRadiance += uGlow * _en * uGlowStrength * smoothstep(0.05,0.85,vBase) * (1.0 - 0.55*_top);\n' +
+          // reflexo do SOL na placa de vidro de cima (branco, some quando o feixe passa)
+          'float _gl = pow(clamp(vLit,0.0,1.0),2.2);\n' +
+          'totalEmissiveRadiance += vec3(0.85,1.0,0.92) * _top * _gl * uGlowStrength * 1.4;')
     }
+    const onBeforeCompile = (shader: unknown) => patchShader(shader as ShaderLike)
 
-    const COLS=22, ROWS=22, SEP=26, BASE_H=2
-    const geoCache: Record<number, THREE.ExtrudeGeometry> = {}
-    function getGeo(sz: number) {
-      const k=Math.round(sz)
-      if(!geoCache[k]) geoCache[k]=makeRoundedBox(sz,sz,sz*0.26)
-      return geoCache[k]
-    }
+    let COLS = Math.round(P.density), ROWS = COLS
+    const SEP = 1.0, BAR = 0.82
+    const geo = new RoundedBoxGeometry(BAR, 1, BAR, 5, 0.15)
+    const mat = new THREE.MeshPhysicalMaterial({ metalness: 0.25, roughness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.22, envMapIntensity: 1.15 })
+    mat.onBeforeCompile = onBeforeCompile
 
-    function blockSize(ix: number, iz: number) {
-      const nx=ix/(COLS-1), nz=iz/(ROWS-1)
-      const dx=Math.abs(nx-0.5)*2, dz=Math.abs(nz-0.5)*2
-      const edge=Math.pow(Math.max(dx,dz),1.6)
-      return Math.round(20-edge*10)
-    }
+    let mesh: THREE.InstancedMesh
+    let refl: THREE.InstancedMesh
+    let count = 0
+    let litArr: Float32Array, litReflArr: Float32Array, actArr: Float32Array, cleanArr: Float32Array
+    let centerBias: Float32Array, diagArr: Float32Array
+    const dummy = new THREE.Object3D()
+    const gridGroup = new THREE.Group()
+    scene.add(gridGroup)
 
-    const bars: {
-      mesh: THREE.Mesh
-      ix: number; iz: number
-      lit: number
-      baseCol: THREE.Color
-      baseEmis: THREE.Color
-      sz: number
-    }[] = []
+    // poça de luz na base
+    const padMat = new THREE.MeshBasicMaterial({ map: radialTexture(pal.glow), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5, fog: true })
+    const pad = new THREE.Mesh(new THREE.PlaneGeometry(46, 46), padMat)
+    pad.rotation.x = -Math.PI / 2; pad.position.y = 0.015
+    gridGroup.add(pad)
 
-    for(let ix=0;ix<COLS;ix++){
-      for(let iz=0;iz<ROWS;iz++){
-        const sz=blockSize(ix,iz)
-        const geo=getGeo(sz)
-        const diag=((COLS-1-ix)+iz)/(COLS+ROWS-2)
-        const baseCol=palColor(diag)
-        const baseEmis=baseCol.clone().multiplyScalar(0.28)
-        const mat=new THREE.MeshPhongMaterial({
-          color:baseCol.clone(), emissive:baseEmis.clone(),
-          shininess:80, specular:new THREE.Color(0x88ffbb),
-        })
-        const mesh=new THREE.Mesh(geo,mat)
-        mesh.rotation.x=-Math.PI/2
-        mesh.position.set((ix-COLS/2+0.5)*SEP, BASE_H/2, (iz-ROWS/2+0.5)*SEP)
-        mesh.scale.z=BASE_H
-        scene.add(mesh)
-        bars.push({mesh,ix,iz,lit:0,baseCol:baseCol.clone(),baseEmis:baseEmis.clone(),sz})
+    function recolor() {
+      let i = 0
+      for (let ix = 0; ix < COLS; ix++) for (let iz = 0; iz < ROWS; iz++) {
+        const col = paletteColor(pal.stops, diagArr[i]).multiplyScalar(0.7)
+        mesh.setColorAt(i, col)
+        refl.setColorAt(i, col.clone().multiplyScalar(0.55))
+        i++
       }
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+      if (refl.instanceColor) refl.instanceColor.needsUpdate = true
     }
 
-    scene.add(new THREE.AmbientLight(0xffffff,0.25))
-    const d1=new THREE.DirectionalLight(0xffffff,1.0)
-    d1.position.set(-300,600,200); scene.add(d1)
-    const d2=new THREE.DirectionalLight(0x3DC45A,0.28)
-    d2.position.set(150,250,-100); scene.add(d2)
+    function buildGrid() {
+      if (mesh) { gridGroup.remove(mesh); mesh.geometry.dispose(); mesh.dispose() }
+      if (refl) { gridGroup.remove(refl); refl.geometry.dispose(); refl.dispose() }
+      count = COLS * ROWS
+      litArr = new Float32Array(count)
+      litReflArr = new Float32Array(count)
+      actArr = new Float32Array(count)
+      cleanArr = new Float32Array(count)
+      centerBias = new Float32Array(count)
+      diagArr = new Float32Array(count)
 
-    let t=0, paused=false, pauseTimer=0
-    let lastTime=performance.now()
-    let animId: number
+      mesh = new THREE.InstancedMesh(geo, mat, count)
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      mesh.geometry.setAttribute('aLit', new THREE.InstancedBufferAttribute(litArr, 1))
+      mesh.geometry.setAttribute('aClean', new THREE.InstancedBufferAttribute(cleanArr, 1))
 
-    function animate(now: number) {
-      animId=requestAnimationFrame(animate)
-      const delta=Math.min((now-lastTime)/1000,0.05)
-      lastTime=now
+      const reflMat = mat.clone()
+      reflMat.transparent = true; reflMat.opacity = 0.26; reflMat.depthWrite = false
+      reflMat.onBeforeCompile = onBeforeCompile
+      refl = new THREE.InstancedMesh(geo, reflMat, count)
+      refl.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      refl.geometry.setAttribute('aLit', new THREE.InstancedBufferAttribute(litReflArr, 1))
+      refl.geometry.setAttribute('aClean', new THREE.InstancedBufferAttribute(cleanArr, 1))
 
-      if(paused){
-        pauseTimer+=delta
-        if(pauseTimer>=2.0){paused=false;pauseTimer=0;t=0}
-        for(const bar of bars){
-          bar.lit+=(0-bar.lit)*0.06
-          const newH=bar.mesh.scale.z+(BASE_H-bar.mesh.scale.z)*0.06
-          bar.mesh.scale.z=newH
-          bar.mesh.position.y=newH/2
-          const em=bar.baseEmis.clone().lerp(bar.baseCol,bar.lit*0.5)
-          ;(bar.mesh.material as THREE.MeshPhongMaterial).emissive.copy(em)
+      let i = 0
+      for (let ix = 0; ix < COLS; ix++) {
+        for (let iz = 0; iz < ROWS; iz++) {
+          const nx = ix / (COLS - 1), nz = iz / (ROWS - 1)
+          const edge = Math.pow(Math.max(Math.abs(nx - 0.5) * 2, Math.abs(nz - 0.5) * 2), 1.6)
+          centerBias[i] = 1 - edge * 0.42
+          diagArr[i] = (ix + (ROWS - 1 - iz)) / (COLS + ROWS - 2)
+          i++
         }
-        renderer.render(scene,camera)
-        return
       }
+      recolor()
+      gridGroup.add(refl)
+      gridGroup.add(mesh)
+    }
+    buildGrid()
 
-      t+=0.003
-      if(t>=1){paused=true;t=1}
-
-      const wavePos=t*(COLS+ROWS)
-
-      for(const bar of bars){
-        const diag=(COLS-1-bar.ix)+bar.iz
-        const dist=wavePos-diag
-        const WW=6
-        let wave=0
-        if(dist>0&&dist<WW) wave=Math.sin((dist/WW)*Math.PI)
-        else if(dist>=WW) wave=Math.max(0,1-(dist-WW)*0.07)*0.18
-        bar.lit+=(wave-bar.lit)*0.09
-
-        const scale=bar.sz/20
-        const targetH=BASE_H+bar.lit*65*scale
-        const newH=bar.mesh.scale.z+(targetH-bar.mesh.scale.z)*0.09
-        bar.mesh.scale.z=newH
-
-        const sineY=bar.lit>0.05?Math.sin((diag*0.35)+t*Math.PI*5)*0.015*newH:0
-        bar.mesh.position.y=newH/2+sineY
-
-        const em=bar.baseEmis.clone().lerp(bar.baseCol,bar.lit*0.5)
-        ;(bar.mesh.material as THREE.MeshPhongMaterial).emissive.copy(em)
-      }
-
-      renderer.render(scene,camera)
+    function gridPos(idx: number): [number, number] {
+      const ix = Math.floor(idx / ROWS), iz = idx % ROWS
+      return [(ix - COLS / 2 + 0.5) * SEP, (iz - ROWS / 2 + 0.5) * SEP]
     }
 
-    animId=requestAnimationFrame(animate)
+    // ── Composer + Bloom (MSAA HDR → bordas nítidas) ─────────────
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 })
+    const composer = new EffectComposer(renderer, rt)
+    composer.addPass(new RenderPass(scene, camera))
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.42, 0.74)
+    composer.addPass(bloomPass)
+    composer.addPass(new OutputPass())
+    composer.setSize(W, H)
 
-    const ro=new ResizeObserver(()=>{
-      const W2=container.offsetWidth, H2=container.offsetHeight
-      camera.aspect=W2/H2; camera.updateProjectionMatrix()
-      renderer.setSize(W2,H2)
+    // ── Parallax ─────────────────────────────────────────────────
+    const pointer = { x: 0, y: 0, tx: 0, ty: 0 }
+    function onMove(e: PointerEvent) {
+      const r = container!.getBoundingClientRect()
+      pointer.tx = ((e.clientX - r.left) / r.width - 0.5) * 2
+      pointer.ty = ((e.clientY - r.top) / r.height - 0.5) * 2
+    }
+    window.addEventListener('pointermove', onMove)
+
+    // ── Layout responsivo ────────────────────────────────────────
+    function layout() {
+      if (W < MOBILE_BP) {
+        gridGroup.position.set(0, 0, 0)
+        CAM_BASE.set(0, 15, 21)
+        CAM_LOOK.set(0, 1.2, 0)
+      } else {
+        gridGroup.position.set(4.5, 0, -1.5)
+        CAM_BASE.set(14.5, 13.5, 17.5)
+        CAM_LOOK.set(0.5, 1.4, 0)
+      }
+    }
+    layout()
+
+    function applyPalette() {
+      const np = PALETTES[P.palette] || PALETTES.green
+      if (np === pal) return
+      pal = np
+      glowUniform.value.set(pal.glow)
+      scene.fog!.color.set(pal.fog)
+      backUniforms.c0.value.set(pal.back0); backUniforms.c1.value.set(pal.back1); backUniforms.cGlow.value.set(pal.glow)
+      sunMat.map = radialTexture(pal.glow); sunMat.needsUpdate = true
+      padMat.map = radialTexture(pal.glow); padMat.needsUpdate = true
+      recolor()
+    }
+
+    // ── Loop ─────────────────────────────────────────────────────
+    let t = 0.4, last = performance.now()
+    let raf = 0
+    const MAXH = 4.3, BASEH = 0.1
+    const SIG_H = 0.19, SIG_BEAM = 0.04
+    const motion = reduce ? 0.7 : 1
+
+    function frame(now: number) {
+      raf = requestAnimationFrame(frame)
+      const dt = Math.min((now - last) / 1000, 0.05)
+      last = now
+
+      if (Math.round(P.density) !== COLS) { COLS = ROWS = Math.round(P.density); buildGrid() }
+      applyPalette()
+      glowStrength.value = 1.9 * P.glow
+      bloomPass.strength = 0.62 * P.bloom
+
+      t += dt * P.speed * motion
+      // ciclo 0..1; a crista viaja além das bordas (-0.6 → 1.6) e some off-grid antes do wrap
+      const cyc = (t * 0.093) % 1
+      const head = cyc * 2.2 - 0.6
+      const headN = (head + 0.6) / 2.2
+      const ramp = Math.max(0, Math.min(1, cyc / 0.12, (1 - cyc) / 0.12))
+      const env = ramp * ramp * (3 - 2 * ramp)
+      backUniforms.uHead.value = headN
+      backUniforms.uEnv.value = env
+      sun.position.x = -95 + headN * 190
+      sunMat.opacity = 0.2 * env
+      const phase = t * 0.9
+
+      const litAttr = mesh.geometry.getAttribute('aLit') as THREE.InstancedBufferAttribute
+      const reflAttr = refl.geometry.getAttribute('aLit') as THREE.InstancedBufferAttribute
+      const cleanAttr = mesh.geometry.getAttribute('aClean') as THREE.InstancedBufferAttribute
+      const cleanAttrR = refl.geometry.getAttribute('aClean') as THREE.InstancedBufferAttribute
+
+      for (let i = 0; i < count; i++) {
+        const iz = i % ROWS
+        const dist = diagArr[i] - head
+        const swell = Math.exp(-(dist * dist) / (2 * SIG_H * SIG_H))
+        const beam = Math.exp(-(dist * dist) / (2 * SIG_BEAM * SIG_BEAM))
+
+        const undul = 0.5 + 0.5 * Math.sin(diagArr[i] * Math.PI * 3.2 - phase + iz * 0.15)
+        const hNorm = undul * 0.14 + swell
+        actArr[i] += (hNorm - actArr[i]) * 0.16
+        const a = actArr[i]
+
+        // COR sujo→limpo persiste atrás do feixe (não mexe na altura)
+        let tc: number
+        if (dist < 0) tc = 1
+        else if (dist < 0.22) tc = 0
+        else tc = cleanArr[i]
+        cleanArr[i] += (tc - cleanArr[i]) * (tc > cleanArr[i] ? 0.1 : 0.05)
+
+        const shimmer = cleanArr[i] * (0.02 + 0.02 * Math.sin(t * 2.2 + diagArr[i] * 24 + i))
+        const target = Math.max(beam * env, shimmer)
+        litArr[i] += (target - litArr[i]) * 0.3
+
+        const h = (BASEH + a * MAXH * centerBias[i]) * P.height
+        const [x, z] = gridPos(i)
+
+        dummy.position.set(x, h / 2, z)
+        dummy.scale.set(1, h, 1)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+
+        dummy.position.set(x, -h / 2 - 0.05, z)
+        dummy.scale.set(1, -h, 1)
+        dummy.updateMatrix()
+        refl.setMatrixAt(i, dummy.matrix)
+        litReflArr[i] = litArr[i] * 0.6
+      }
+      mesh.instanceMatrix.needsUpdate = true
+      refl.instanceMatrix.needsUpdate = true
+      litAttr.needsUpdate = true
+      reflAttr.needsUpdate = true
+      cleanAttr.needsUpdate = true
+      cleanAttrR.needsUpdate = true
+
+      const amt = P.parallax
+      pointer.x += (pointer.tx - pointer.x) * 0.04
+      pointer.y += (pointer.ty - pointer.y) * 0.04
+      camera.position.set(
+        CAM_BASE.x + pointer.x * 1.6 * amt,
+        CAM_BASE.y - pointer.y * 1.0 * amt,
+        CAM_BASE.z,
+      )
+      camera.lookAt(CAM_LOOK)
+
+      composer.render()
+    }
+    raf = requestAnimationFrame(frame)
+
+    // ── Resize ───────────────────────────────────────────────────
+    const ro = new ResizeObserver(() => {
+      const w = container.offsetWidth, h = container.offsetHeight
+      if (!w || !h) return
+      W = w; H = h
+      camera.aspect = w / h; camera.updateProjectionMatrix()
+      renderer.setSize(w, h); composer.setSize(w, h)
+      layout()
     })
     ro.observe(container)
 
-    return ()=>{
-      cancelAnimationFrame(animId)
+    return () => {
+      cancelAnimationFrame(raf)
       ro.disconnect()
-      renderer.dispose()
-      if(container.contains(renderer.domElement)) container.removeChild(renderer.domElement)
-      Object.values(geoCache).forEach((g: THREE.ExtrudeGeometry)=>g.dispose())
+      window.removeEventListener('pointermove', onMove)
+      renderer.dispose(); geo.dispose(); pmrem.dispose()
+      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement)
     }
-  },[])
+  }, [palette, speed, bloom, glow, density, height, parallax])
 
-  return <div ref={containerRef} style={{position:'absolute',inset:0}} />
+  return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 }
