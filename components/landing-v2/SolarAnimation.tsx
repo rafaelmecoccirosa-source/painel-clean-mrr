@@ -156,7 +156,7 @@ export default function SolarAnimation({
     scene.add(backdrop)
 
     // sol/halo grande que cruza o fundo junto com o feixe
-    const sunMat = new THREE.SpriteMaterial({ map: radialTexture(pal.glow), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0.2, fog: false })
+    const sunMat = new THREE.SpriteMaterial({ map: radialTexture(pal.glow), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0.13, fog: false })
     const sun = new THREE.Sprite(sunMat)
     sun.scale.set(105, 105, 1); sun.position.set(0, 26, -68); sun.renderOrder = -1
     scene.add(sun)
@@ -308,6 +308,24 @@ export default function SolarAnimation({
     window.addEventListener('pointermove', onMove)
 
     // ── Layout responsivo ────────────────────────────────────────
+    // FOV vertical de base, calibrado para um hero "alto" (aspect de
+    // referência ~1.7). Em telas largas/curtas o aspect cresce e o FOV
+    // horizontal abriria demais — puxando o sol e o backdrop pra dentro
+    // do quadro e estourando tudo de branco. Então fechamos o FOV
+    // vertical pra manter o enquadramento horizontal constante.
+    const FOV_BASE = 40
+    const ASPECT_REF = 1.7
+    function applyFov() {
+      const aspect = camera.aspect
+      let fov = FOV_BASE
+      if (aspect > ASPECT_REF) {
+        const hHalf = Math.atan(Math.tan((FOV_BASE * Math.PI / 180) / 2) * ASPECT_REF)
+        fov = (2 * Math.atan(Math.tan(hHalf) / aspect)) * 180 / Math.PI
+      }
+      camera.fov = fov
+      camera.updateProjectionMatrix()
+    }
+
     function layout() {
       if (W < MOBILE_BP) {
         gridGroup.position.set(0, 0, 0)
@@ -318,6 +336,7 @@ export default function SolarAnimation({
         CAM_BASE.set(14.5, 13.5, 17.5)
         CAM_LOOK.set(0.5, 1.4, 0)
       }
+      applyFov()
     }
     layout()
 
@@ -360,7 +379,7 @@ export default function SolarAnimation({
       backUniforms.uHead.value = headN
       backUniforms.uEnv.value = env
       sun.position.x = -95 + headN * 190
-      sunMat.opacity = 0.2 * env
+      sunMat.opacity = 0.13 * env
       const phase = t * 0.9
 
       const litAttr = mesh.geometry.getAttribute('aLit') as THREE.InstancedBufferAttribute
