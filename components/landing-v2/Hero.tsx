@@ -41,12 +41,22 @@ export default function Hero() {
       }}/>
 
       {/* Animação Three.js — fundo completo */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+      <div className="hero-anim" style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
         <SolarAnimation />
       </div>
 
+      {/* Scrim: degradê escuro à esquerda — esconde a borda da malha/reflexo
+          que entrava na área do texto e faz o título destacar */}
+      <div className="hero-scrim" style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 3,
+        pointerEvents: 'none',
+        background: 'linear-gradient(90deg, #0B2D1E 0%, rgba(11,45,30,0.82) 24%, rgba(11,45,30,0) 56%)',
+      }}/>
+
       {/* Conteúdo — sobreposto à esquerda */}
-      <div style={{
+      <div className="hero-content" style={{
         position: 'absolute',
         left: 0,
         top: 0,
@@ -199,31 +209,29 @@ export default function Hero() {
             padding: 12px 12px !important;
             font-size: 14px !important;
           }
+          /* Mobile: animação fica como fundo de tela cheia atrás do conteúdo.
+             O conteúdo vira fluxo normal (relative) e define a altura da seção;
+             a .hero-anim (absolute inset:0) preenche esse fundo. */
           section {
-            display: flex !important;
-            flex-direction: column !important;
             min-height: auto !important;
-            overflow: visible !important;
           }
-          section > div:nth-child(3) {
-            position: relative !important;
-            inset: unset !important;
-            width: 100% !important;
-            height: 240px !important;
-            order: 2 !important;
-            margin-top: -24px !important;
-            overflow: hidden !important;
-          }
-          section > div:nth-child(4) {
+          .hero-content {
             position: relative !important;
             inset: unset !important;
             left: unset !important;
             top: unset !important;
             bottom: unset !important;
             width: 100% !important;
-            padding: 52px 24px 0 !important;
-            min-height: auto !important;
-            order: 1 !important;
+            padding: 96px 24px 56px !important;
+          }
+          .hero-scrim {
+            background: linear-gradient(
+              180deg,
+              rgba(11,45,30,0.92) 0%,
+              rgba(11,45,30,0.55) 38%,
+              rgba(11,45,30,0.40) 68%,
+              rgba(11,45,30,0.66) 100%
+            ) !important;
           }
         }
       ` }} />
