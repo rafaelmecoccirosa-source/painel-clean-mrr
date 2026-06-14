@@ -83,9 +83,9 @@ function radialTexture(hex: number) {
 export default function SolarAnimation({
   palette = 'green',
   speed = 0.7,
-  bloom = 1.6,
-  glow = 1.0,
-  density = 21,
+  bloom = 1.0,
+  glow = 0.7,
+  density = 17,
   height = 1,
   parallax = 1,
 }: SolarProps = {}) {
@@ -109,7 +109,7 @@ export default function SolarAnimation({
     const CAM_BASE = new THREE.Vector3()
     const CAM_LOOK = new THREE.Vector3()
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     let renderer: THREE.WebGLRenderer
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
@@ -120,11 +120,13 @@ export default function SolarAnimation({
     renderer.setSize(W, H)
     renderer.setClearColor(0x000000, 0)
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.12
+    renderer.toneMappingExposure = 0.98
     container.appendChild(renderer.domElement)
 
     const pmrem = new THREE.PMREMGenerator(renderer)
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04)
+    scene.environment = envRT.texture
+    scene.environmentIntensity = 0.35 // RoomEnvironment é um estúdio claro — segurar p/ não lavar os painéis
 
     // ── Backdrop com profundidade + LUZ QUE VIAJA (sync c/ feixe) ─
     const backUniforms = {
@@ -162,12 +164,12 @@ export default function SolarAnimation({
     scene.add(sun)
 
     // ── Luzes ────────────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0xbfe6cf, 0.18))
-    const key = new THREE.DirectionalLight(0xffffff, 2.4)
+    scene.add(new THREE.AmbientLight(0xbfe6cf, 0.14))
+    const key = new THREE.DirectionalLight(0xffffff, 1.35)
     key.position.set(-14, 22, 10); scene.add(key)
-    const rim = new THREE.DirectionalLight(0x39c45a, 1.2)
+    const rim = new THREE.DirectionalLight(0x39c45a, 0.9)
     rim.position.set(12, 8, -14); scene.add(rim)
-    const fill = new THREE.DirectionalLight(0x8fd3ff, 0.22)
+    const fill = new THREE.DirectionalLight(0x8fd3ff, 0.18)
     fill.position.set(8, 6, 16); scene.add(fill)
 
     // ── Material: vidro fotovoltaico + glow emissivo (via shader) ─
@@ -213,8 +215,8 @@ export default function SolarAnimation({
 
     let COLS = Math.round(P.density), ROWS = COLS
     const SEP = 1.0, BAR = 0.82
-    const geo = new RoundedBoxGeometry(BAR, 1, BAR, 5, 0.15)
-    const mat = new THREE.MeshPhysicalMaterial({ metalness: 0.25, roughness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.22, envMapIntensity: 1.15 })
+    const geo = new RoundedBoxGeometry(BAR, 1, BAR, 4, 0.15)
+    const mat = new THREE.MeshPhysicalMaterial({ metalness: 0.22, roughness: 0.42, clearcoat: 0.32, clearcoatRoughness: 0.3, envMapIntensity: 0.45 })
     mat.onBeforeCompile = onBeforeCompile
 
     let mesh: THREE.InstancedMesh
@@ -290,10 +292,10 @@ export default function SolarAnimation({
     }
 
     // ── Composer + Bloom (MSAA HDR → bordas nítidas) ─────────────
-    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 })
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 2 })
     const composer = new EffectComposer(renderer, rt)
     composer.addPass(new RenderPass(scene, camera))
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.45, 0.55)
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.45, 0.62)
     composer.addPass(bloomPass)
     composer.addPass(new OutputPass())
     composer.setSize(W, H)
@@ -355,11 +357,13 @@ export default function SolarAnimation({
     // ── Loop ─────────────────────────────────────────────────────
     let t = 0.4, last = performance.now()
     let raf = 0
+    let running = false
     const MAXH = 4.3, BASEH = 0.1
     const SIG_H = 0.19, SIG_BEAM = 0.04
     const motion = reduce ? 0.7 : 1
 
     function frame(now: number) {
+      if (!running) return
       raf = requestAnimationFrame(frame)
       const dt = Math.min((now - last) / 1000, 0.05)
       last = now
@@ -442,7 +446,29 @@ export default function SolarAnimation({
 
       composer.render()
     }
-    raf = requestAnimationFrame(frame)
+
+    // Só roda quando o hero está visível e a aba ativa — evita gastar
+    // GPU/bateria com a animação fora da tela.
+    let onScreen = true
+    function start() {
+      if (running || !onScreen || document.hidden) return
+      running = true
+      last = performance.now()
+      raf = requestAnimationFrame(frame)
+    }
+    function stop() {
+      running = false
+      cancelAnimationFrame(raf)
+    }
+
+    const io = new IntersectionObserver(
+      ([e]) => { onScreen = e.isIntersecting; if (onScreen) start(); else stop() },
+      { threshold: 0 },
+    )
+    io.observe(container)
+    function onVisibility() { if (document.hidden) stop(); else start() }
+    document.addEventListener('visibilitychange', onVisibility)
+    start()
 
     // ── Resize ───────────────────────────────────────────────────
     const ro = new ResizeObserver(() => {
@@ -456,8 +482,10 @@ export default function SolarAnimation({
     ro.observe(container)
 
     return () => {
-      cancelAnimationFrame(raf)
+      stop()
+      io.disconnect()
       ro.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pointermove', onMove)
       renderer.dispose(); geo.dispose(); pmrem.dispose()
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement)
