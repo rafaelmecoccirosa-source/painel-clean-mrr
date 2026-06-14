@@ -227,10 +227,10 @@ export default function Hero() {
           .hero-scrim {
             background: linear-gradient(
               180deg,
-              rgba(11,45,30,0.92) 0%,
-              rgba(11,45,30,0.55) 38%,
-              rgba(11,45,30,0.40) 68%,
-              rgba(11,45,30,0.66) 100%
+              rgba(11,45,30,0.96) 0%,
+              rgba(11,45,30,0.84) 40%,
+              rgba(11,45,30,0.34) 62%,
+              rgba(11,45,30,0.12) 100%
             ) !important;
           }
         }

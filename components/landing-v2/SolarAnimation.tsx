@@ -330,15 +330,20 @@ export default function SolarAnimation({
 
     function layout() {
       if (W < MOBILE_BP) {
-        gridGroup.position.set(0, 0, 0)
-        CAM_BASE.set(0, 15, 21)
-        CAM_LOOK.set(0, 1.2, 0)
+        // Retrato: lente mais aberta + câmera oblíqua (como o desktop, mas
+        // enquadrada pra portrait). Grade puxada pra baixo do quadro pra
+        // sobrar topo escuro p/ o texto.
+        gridGroup.position.set(0, 0, -2)
+        CAM_BASE.set(7, 6.8, 13)
+        CAM_LOOK.set(0, 4.6, -2)
+        camera.fov = 58
+        camera.updateProjectionMatrix()
       } else {
         gridGroup.position.set(4.5, 0, -1.5)
         CAM_BASE.set(14.5, 13.5, 17.5)
         CAM_LOOK.set(0.5, 1.4, 0)
+        applyFov()
       }
-      applyFov()
     }
     layout()
 
