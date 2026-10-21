@@ -1,23 +1,37 @@
-import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/service';
+import { NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
+
+// Expõe só o código do erro (PGRST205, 42P01, "network"...), nunca a mensagem,
+// para o alerta do Keep Alive apontar a causa sem vazar detalhes do banco.
+function fail(reason: string, http?: number) {
+  return NextResponse.json(
+    { status: "error", db: false, reason, ...(http ? { http } : {}) },
+    { status: 503 }
+  );
+}
 
 export async function GET() {
+  let supabase;
   try {
-    const supabase = createServiceClient();
-    const { error } = await supabase.from('profiles').select('count').limit(1).single();
+    supabase = createServiceClient();
+  } catch {
+    return fail("config");
+  }
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+  try {
+    const { error, status } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
+
+    if (error) {
+      return fail(error.code || (status === 0 ? "network" : "unknown"), status || undefined);
     }
 
     return NextResponse.json(
-      { status: 'ok', db: true, ts: new Date().toISOString() },
+      { status: "ok", db: true, ts: new Date().toISOString() },
       { status: 200 }
     );
   } catch {
-    return NextResponse.json(
-      { status: 'error', db: false },
-      { status: 503 }
-    );
+    return fail("network");
   }
 }
