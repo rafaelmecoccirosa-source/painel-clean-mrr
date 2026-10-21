@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
+// Sem isto o Next 14 pre-renderiza o GET no build e serve a resposta antiga
+// para sempre: o health reportava ok sem consultar o banco.
+export const dynamic = "force-dynamic";
+
 // Expõe só o código do erro (PGRST205, 42P01, "network"...), nunca a mensagem,
 // para o alerta do Keep Alive apontar a causa sem vazar detalhes do banco.
 function fail(reason: string, http?: number) {
