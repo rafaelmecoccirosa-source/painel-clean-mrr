@@ -1,0 +1,85 @@
+name: Keep Alive
+
+on:
+  schedule:
+    - cron: '0 10 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  HEALTH_URL: https://painel-clean-mrr.vercel.app/api/health
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        id: ping
+        run: |
+          # 3 tentativas: o primeiro request pode pegar cold start da Vercel
+          # ou o Supabase acordando.
+          for attempt in 1 2 3; do
+            STATUS=$(curl -s -o body.txt -w "%{http_code}" --max-time 30 "$HEALTH_URL" || true)
+            echo "Attempt $attempt: HTTP $STATUS"
+            echo "Body: $(head -c 500 body.txt 2>/dev/null)"
+            if [ "$STATUS" = "200" ]; then
+              exit 0
+            fi
+            [ "$attempt" -lt 3 ] && sleep 30
+          done
+
+          case "$STATUS" in
+            503) DIAG="App no ar, mas o banco nao respondeu. Provavel projeto Supabase pausado (dashboard -> Restore) ou SUPABASE_SERVICE_ROLE_KEY invalida na Vercel." ;;
+            000) DIAG="Sem resposta (timeout ou DNS). Provavel app fora do ar na Vercel." ;;
+            3??) DIAG="Redirecionamento. Provavel regressao no middleware.ts: /api/health precisa estar nas rotas publicas." ;;
+            *)   DIAG="Resposta inesperada. Veja o corpo acima e os logs da Vercel." ;;
+          esac
+          echo "::error title=Health check falhou::HTTP $STATUS. $DIAG"
+          {
+            echo "status=$STATUS"
+            echo "diag=$DIAG"
+            echo "body=$(head -c 500 body.txt 2>/dev/null)"
+          } >> "$GITHUB_OUTPUT"
+          exit 1
+
+      # Falha de cron so vira e-mail se as notificacoes do GitHub estiverem
+      # ligadas, e ja ficou um mes vermelho sem ninguem ver. Issue e mais dificil de ignorar.
+      - name: Open or update alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STATUS: ${{ steps.ping.outputs.status }}
+          DIAG: ${{ steps.ping.outputs.diag }}
+          BODY: ${{ steps.ping.outputs.body }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create keep-alive-down --color B60205 \
+            --description "Health check do app falhando" 2>/dev/null || true
+
+          MSG=$(printf 'HTTP **%s** em `%s`\n\n%s\n\nCorpo: `%s`\n\nRun: %s' \
+            "$STATUS" "$HEALTH_URL" "$DIAG" "$BODY" "$RUN_URL")
+
+          EXISTING=$(gh issue list --label keep-alive-down --state open \
+            --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$MSG"
+          else
+            gh issue create --label keep-alive-down \
+              --title "Keep Alive: health check do painel-clean-mrr falhando" \
+              --body "$MSG"
+          fi
+
+      - name: Close alert issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for n in $(gh issue list --label keep-alive-down --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Health check voltou a responder 200."
+          done
